@@ -26,12 +26,14 @@ export function signXml(
     throw new Error('Conteúdo XML vazio.')
   }
 
-  const tagRegex = new RegExp(`<[^/][^>]*${tagName}`)
+  // Detecta tag de abertura: <tagName>, <tagName attr...>, <tagName/>
+  // Usa lookahead de [\s>/] para não bater em nomes mais longos (ex: <infDPSExtended)
+  const tagRegex = new RegExp(`<${tagName}[\\s>/]`)
   if (!tagRegex.test(xml)) {
     throw new Error(`Tag ${tagName} não encontrada para assinatura.`)
   }
 
-  const idRegex = new RegExp(`<[^>]*${tagName}[^>]*\\sId="([^"]*)"`)
+  const idRegex = new RegExp(`<${tagName}[^>]*\\sId="([^"]*)"`)
   const idMatch = idRegex.exec(xml)
   if (!idMatch || idMatch[1] === '') {
     throw new Error(`Tag a ser assinada deve possuir um atributo 'Id'.`)
