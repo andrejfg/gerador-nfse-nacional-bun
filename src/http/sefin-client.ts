@@ -41,22 +41,22 @@ export class SefinClient {
   }
 
   async consultarDps(idDps: string): Promise<ConsultaDpsResponse> {
-    const data = await this.get(`/dps/${idDps}`)
+    const data = await this.get(`/dps/${idDps}`) as Record<string, unknown>
     return {
-      cStat: String(data?.cStat ?? ''),
-      xMotivo: String(data?.xMotivo ?? ''),
-      situacao: String(data?.situacao ?? ''),
+      cStat: String(data?.['cStat'] ?? ''),
+      xMotivo: String(data?.['xMotivo'] ?? ''),
+      situacao: String(data?.['situacao'] ?? ''),
     }
   }
 
   async registrarEvento(chaveAcesso: string, eventoXmlGZipB64: string): Promise<RegistroEventoResponse> {
-    const data = await this.post(`/nfse/${chaveAcesso}/eventos`, { pedRegEventoXmlGZipB64: eventoXmlGZipB64 })
-    return { cStat: String(data?.cStat ?? ''), xMotivo: String(data?.xMotivo ?? '') }
+    const data = await this.post(`/nfse/${chaveAcesso}/eventos`, { pedRegEventoXmlGZipB64: eventoXmlGZipB64 }) as Record<string, unknown>
+    return { cStat: String(data?.['cStat'] ?? ''), xMotivo: String(data?.['xMotivo'] ?? '') }
   }
 
   async downloadDanfse(chaveAcesso: string): Promise<string> {
-    const data = await this.get(`/nfse/${chaveAcesso}/pdf`)
-    return String(data?.pdf ?? data?.danfse ?? '')
+    const data = await this.get(`/nfse/${chaveAcesso}/pdf`) as Record<string, unknown>
+    return String(data?.['pdf'] ?? data?.['danfse'] ?? '')
   }
 
   async listarEventos(chaveAcesso: string): Promise<unknown[]> {
