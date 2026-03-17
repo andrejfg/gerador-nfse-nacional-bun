@@ -19,7 +19,8 @@ import { formatCpf, formatCnpj } from './cpf-cnpj.js'
  * ```
  */
 export function generateCpf(formatted = false): string {
-  const d = Array.from({ length: 9 }, () => Math.floor(Math.random() * 10))
+  const d = Array.from({ length: 9 }, () => Math.floor(Math.random() * 10)) as
+    [number, number, number, number, number, number, number, number, number]
 
   const sum1 = d[8] * 2 + d[7] * 3 + d[6] * 4 + d[5] * 5 +
                d[4] * 6 + d[3] * 7 + d[2] * 8 + d[1] * 9 + d[0] * 10
@@ -49,7 +50,8 @@ export function generateCpf(formatted = false): string {
  */
 export function generateCnpj(formatted = false): string {
   // 8 dígitos aleatórios + filial fixa 0001
-  const d = [...Array.from({ length: 8 }, () => Math.floor(Math.random() * 10)), 0, 0, 0, 1]
+  const d = [...Array.from({ length: 8 }, () => Math.floor(Math.random() * 10)), 0, 0, 0, 1] as
+    [number, number, number, number, number, number, number, number, number, number, number, number]
 
   const sum1 = d[11] * 2 + d[10] * 3 + d[9] * 4 + d[8] * 5 + d[7] * 6 + d[6] * 7 +
                d[5] * 8 + d[4] * 9 + d[3] * 2 + d[2] * 3 + d[1] * 4 + d[0] * 5
