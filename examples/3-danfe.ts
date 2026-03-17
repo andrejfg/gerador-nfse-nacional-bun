@@ -4,6 +4,9 @@
  * Recebe o XML da NFS-e (retornado pela API SEFIN após emissão aprovada)
  * e gera o PDF da DANF-Se.
  *
+ * O arquivo `nfse-exemplo.xml` nesta pasta simula a resposta real da API
+ * e pode ser substituído por um XML obtido em homologação/produção.
+ *
  * Requer puppeteer instalado:
  *   bun add puppeteer
  *
@@ -12,18 +15,22 @@
  */
 
 import { readFileSync, writeFileSync } from 'node:fs'
+import { join, dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { DanfeService, parseNfseXml } from 'nfse-nacional'
 
+const __dirname = dirname(fileURLToPath(import.meta.url))
+
 // ---------------------------------------------------------------------------
-// Opção A: gerar PDF a partir do XML da NFS-e
+// Opção A: gerar PDF a partir do XML de exemplo (ou substitua por nfse.xml real)
 // ---------------------------------------------------------------------------
 
-const xmlNfse = readFileSync('./nfse.xml', 'utf-8')
+const xmlNfse = readFileSync(join(__dirname, 'nfse-exemplo.xml'), 'utf-8')
 
 const danfe = new DanfeService()
 const result = await danfe.generateFromXml(xmlNfse)
 
-writeFileSync('./danfe.pdf', result.pdfBytes)
+writeFileSync(join(__dirname, 'danfe.pdf'), result.pdfBytes)
 console.log('✅ DANF-Se gerada:', './danfe.pdf')
 
 if (result.warnings.length > 0) {

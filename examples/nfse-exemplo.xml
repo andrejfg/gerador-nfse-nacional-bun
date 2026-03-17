@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<NFSe xmlns="http://www.sped.fazenda.gov.br/nfse" versao="1.00">
+  <infNFSe Id="NFSe31062001531936080001460010100000000000001">
+    <cStat>100</cStat>
+    <xMotivo>NFS-e emitida com sucesso</xMotivo>
+    <chNFSe>31062001531936080001460010100000000000001</chNFSe>
+    <nNFSe>000001</nNFSe>
+    <dhProc>2023-06-20T10:30:00-03:00</dhProc>
+    <xLocEmi>Belo Horizonte</xLocEmi>
+    <xLocPrestacao>Belo Horizonte</xLocPrestacao>
+    <cLocIncid>3106200</cLocIncid>
+    <xTribNac>Desenvolvimento de programas de computador sob encomenda</xTribNac>
+    <xTribMun>Desenvolvimento de sistemas</xTribMun>
+    <xNBS>1.0901.00.00</xNBS>
+    <verAplic>1.00.00</verAplic>
+    <ambGer>2</ambGer>
+    <tpEmis>1</tpEmis>
+    <procEmi>1</procEmi>
+    <emit>
+      <CNPJ>53193608000146</CNPJ>
+      <IM>123456</IM>
+      <xNome>Empresa Prestadora LTDA</xNome>
+      <xFant>Empresa Prestadora</xFant>
+      <enderNac>
+        <xLgr>Avenida Afonso Pena</xLgr>
+        <nro>1500</nro>
+        <xBairro>Centro</xBairro>
+        <cMun>3106200</cMun>
+        <UF>MG</UF>
+        <CEP>30130170</CEP>
+        <cPais>1058</cPais>
+      </enderNac>
+      <fone>3133334444</fone>
+      <email>contato@empresa.com.br</email>
+      <regTrib>
+        <opSimpNac>1</opSimpNac>
+        <regApurSN>1</regApurSN>
+        <regEspTrib>0</regEspTrib>
+      </regTrib>
+    </emit>
+    <DPS>
+      <infDPS Id="DPS31062001531936080001460010100000000000001" versao="1.00">
+        <tpAmb>2</tpAmb>
+        <nDPS>000001</nDPS>
+        <serie>001</serie>
+        <dhEmi>2023-06-20T10:00:00-03:00</dhEmi>
+        <dCompet>2023-06</dCompet>
+        <prest>
+          <CNPJ>53193608000146</CNPJ>
+          <IM>123456</IM>
+          <xNome>Empresa Prestadora LTDA</xNome>
+          <enderNac>
+            <xLgr>Avenida Afonso Pena</xLgr>
+            <nro>1500</nro>
+            <xBairro>Centro</xBairro>
+            <cMun>3106200</cMun>
+            <UF>MG</UF>
+            <CEP>30130170</CEP>
+            <cPais>1058</cPais>
+          </enderNac>
+        </prest>
+        <toma>
+          <CNPJ>00000000000191</CNPJ>
+          <xNome>Banco do Brasil S/A</xNome>
+          <enderNac>
+            <xLgr>Avenida Paulista</xLgr>
+            <nro>1374</nro>
+            <xBairro>Bela Vista</xBairro>
+            <cMun>3550308</cMun>
+            <UF>SP</UF>
+            <CEP>01310100</CEP>
+            <cPais>1058</cPais>
+          </enderNac>
+          <email>fiscal@bb.com.br</email>
+        </toma>
+        <serv>
+          <locPrest>
+            <cLocPrestacao>3106200</cLocPrestacao>
+            <xLocPrestacao>Belo Horizonte</xLocPrestacao>
+          </locPrest>
+          <cServ>
+            <cServTribNac>01.01.00163</cServTribNac>
+            <cServMun>010100</cServMun>
+            <xDescServ>Desenvolvimento de sistema de gestão — sprint 42</xDescServ>
+          </cServ>
+          <xDescServ>Desenvolvimento de sistema de gestão — sprint 42</xDescServ>
+          <xInfComp>Contrato n° 2023/001</xInfComp>
+        </serv>
+        <valores>
+          <vServico>5000.00</vServico>
+          <vBC>5000.00</vBC>
+          <pAliqAplic>5.00</pAliqAplic>
+          <vISSQN>250.00</vISSQN>
+          <vTotalRet>0.00</vTotalRet>
+          <vLiq>4750.00</vLiq>
+          <vCalcDR>0.00</vCalcDR>
+          <vCalcBM>0.00</vCalcBM>
+          <vDescCondicionado>0.00</vDescCondicionado>
+          <vDescIncondicionado>0.00</vDescIncondicionado>
+          <vRetIRRF>0.00</vRetIRRF>
+          <vPis>32.50</vPis>
+          <vCofins>150.00</vCofins>
+          <vRetCSLL>0.00</vRetCSLL>
+        </valores>
+      </infDPS>
+    </DPS>
+    <valores>
+      <vServico>5000.00</vServico>
+      <vBC>5000.00</vBC>
+      <pAliqAplic>5.00</pAliqAplic>
+      <vISSQN>250.00</vISSQN>
+      <vTotalRet>0.00</vTotalRet>
+      <vLiq>4750.00</vLiq>
+      <vCalcDR>0.00</vCalcDR>
+      <vCalcBM>0.00</vCalcBM>
+      <vDescCondicionado>0.00</vDescCondicionado>
+      <vDescIncondicionado>0.00</vDescIncondicionado>
+      <vRetIRRF>0.00</vRetIRRF>
+      <vPis>32.50</vPis>
+      <vCofins>150.00</vCofins>
+      <vRetCSLL>0.00</vRetCSLL>
+    </valores>
+  </infNFSe>
+</NFSe>
