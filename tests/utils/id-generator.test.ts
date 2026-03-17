@@ -69,7 +69,7 @@ describe('formatDataCompetencia', () => {
   })
 
   test('mês de janeiro com zero à esquerda', () => {
-    expect(formatDataCompetencia(new Date('2024-01-01'))).toBe('2024-01')
+    expect(formatDataCompetencia(new Date(2024, 0, 15))).toBe('2024-01')
   })
 })
 

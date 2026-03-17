@@ -37,7 +37,7 @@ describe('formatCpf', () => {
   })
 
   test('completa CPF curto com zeros à esquerda', () => {
-    expect(formatCpf('1234567')).toBe('000.123.456-70')
+    expect(formatCpf('1234567')).toBe('000.012.345-67')
   })
 })
 
