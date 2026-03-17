@@ -1,16 +1,56 @@
 {
-  "name": "gerador-nfse-nacional-bun",
+  "name": "nfse-nacional",
   "version": "0.1.0",
-  "description": "Gerador de NFS-e Nacional em TypeScript/Bun - migrado de nfse-php e direction-nfse-danfe",
+  "description": "SDK TypeScript/Bun para emissão de NFS-e Nacional (SEFIN) — assinatura, DPS, DANF-Se",
   "type": "module",
-  "main": "./src/index.ts",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18.0.0",
+    "bun": ">=1.0.0"
+  },
+  "keywords": [
+    "nfse",
+    "nfs-e",
+    "nfse-nacional",
+    "sefin",
+    "nota-fiscal-servico",
+    "dps",
+    "danfse",
+    "xml",
+    "certificado-digital",
+    "typescript",
+    "bun"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/andrejfg/gerador-nfse-nacional-bun.git"
+  },
+  "homepage": "https://github.com/andrejfg/gerador-nfse-nacional-bun#readme",
   "scripts": {
     "start": "bun src/index.ts",
     "example": "bun src/example.ts",
     "test": "bun test tests/**/*.test.ts",
     "test:coverage": "bun test --coverage tests/**/*.test.ts",
     "typecheck": "bun tsc --noEmit",
-    "build": "bun build src/index.ts --outdir dist --target node",
+    "build": "bun run build:js && bun run build:types",
+    "build:js": "bun build src/index.ts --outdir dist --target node --format esm --external xml-crypto --external fast-xml-parser --external qrcode --external node-forge --external csv-parse --external puppeteer --sourcemap=external",
+    "build:types": "tsc -p tsconfig.build.json",
+    "prepublishOnly": "bun run typecheck && bun run test && bun run build",
     "lint": "bunx biome check src/ tests/",
     "lint:fix": "bunx biome check --write src/ tests/",
     "format": "bunx biome format --write src/ tests/"
@@ -19,9 +59,11 @@
     "xml-crypto": "^6.0.1",
     "fast-xml-parser": "^4.5.0",
     "qrcode": "^1.5.4",
-    "puppeteer": "^22.0.0",
     "node-forge": "^1.3.1",
     "csv-parse": "^5.5.6"
+  },
+  "optionalDependencies": {
+    "puppeteer": "^22.0.0"
   },
   "devDependencies": {
     "@types/qrcode": "^1.5.5",

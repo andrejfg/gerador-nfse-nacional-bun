@@ -42,7 +42,7 @@ jobs:
         run: bun test --coverage tests/**/*.test.ts
 
       # ------------------------------------------------------------------
-      # Build — verifica que o projeto compila sem erros
+      # Build — gera JS (ESM, sem bundlar deps) + declarações .d.ts
       # ------------------------------------------------------------------
       - name: Build
-        run: bun build src/index.ts --outdir dist --target node
+        run: bun run build

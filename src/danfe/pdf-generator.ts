@@ -4,8 +4,6 @@
  * (que usava NReco.PdfGenerator em .NET)
  */
 
-import puppeteer from 'puppeteer'
-
 export interface PdfOptions {
   format?: 'A4' | 'A3' | 'Letter'
   printBackground?: boolean
@@ -26,6 +24,11 @@ const DEFAULT_OPTIONS: PdfOptions = {
 
 export async function generatePdfFromHtml(html: string, options: PdfOptions = {}): Promise<Buffer> {
   const opts = { ...DEFAULT_OPTIONS, ...options }
+
+  // puppeteer é uma dependência opcional — instale com: npm install puppeteer
+  const { default: puppeteer } = await import('puppeteer').catch(() => {
+    throw new Error('puppeteer não encontrado. Instale-o para gerar PDF: npm install puppeteer')
+  })
 
   const browser = await puppeteer.launch({
     headless: true,

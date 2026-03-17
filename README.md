@@ -129,7 +129,7 @@ assets/
 
 O sistema usa a **API SEFIN Nacional** (`sefin.nfse.gov.br`), que abrange todos os municípios aderentes ao programa nacional de NFS-e.
 
-> **Nota**: São Paulo-SP usa sistema próprio (SOAP) e **não** é compatível com esta biblioteca.
+> ⚠️ **Ponto de atenção**: São Paulo-SP usa sistema próprio (SOAP) e **não** é compatível com esta biblioteca.
 > Consulte [nfe.prefeitura.sp.gov.br](https://nfe.prefeitura.sp.gov.br).
 
 ## Referências
