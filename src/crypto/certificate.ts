@@ -34,14 +34,16 @@ export function loadCertificate(pfxPathOrBuffer: string | Buffer, password: stri
     throw new Error(`Falha ao abrir o certificado. Verifique a senha. Detalhe: ${(err as Error).message}`)
   }
 
-  const keyBags = pkcs12.getBags({ bagType: forge.pki.oids.pkcs8ShroudedKeyBag })
-  const keyBag = keyBags[forge.pki.oids.pkcs8ShroudedKeyBag]?.[0]
+  const KEY_OID = forge.pki.oids.pkcs8ShroudedKeyBag as string
+  const keyBags = pkcs12.getBags({ bagType: KEY_OID })
+  const keyBag = keyBags[KEY_OID]?.[0]
   if (!keyBag?.key) throw new Error('Chave privada não encontrada no certificado')
 
   const privateKeyPem = forge.pki.privateKeyToPem(keyBag.key)
 
-  const certBags = pkcs12.getBags({ bagType: forge.pki.oids.certBag })
-  const certBag = certBags[forge.pki.oids.certBag]?.[0]
+  const CERT_OID = forge.pki.oids.certBag as string
+  const certBags = pkcs12.getBags({ bagType: CERT_OID })
+  const certBag = certBags[CERT_OID]?.[0]
   if (!certBag?.cert) throw new Error('Certificado público não encontrado no PFX')
 
   const cert = certBag.cert
