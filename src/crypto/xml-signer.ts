@@ -9,7 +9,11 @@ import type { CertificateInfo } from './certificate.js'
 export type SignatureAlgorithm = 'SHA1' | 'SHA256'
 
 /**
- * Assina um XML com XMLDSig enveloped (RSA-SHA256 por padrão)
+ * Assina um XML com XMLDSig enveloped (RSA-SHA256 por padrão).
+ *
+ * @throws {Error} Se o conteúdo XML for vazio.
+ * @throws {Error} Se a tag a assinar não for encontrada no XML.
+ * @throws {Error} Se a tag encontrada não possuir o atributo `Id` (ou estiver vazio).
  */
 export function signXml(
   xml: string,
@@ -17,6 +21,22 @@ export function signXml(
   cert: CertificateInfo,
   algorithm: SignatureAlgorithm = 'SHA256'
 ): string {
+  // Guards — portado de nfse-php/src/Signer/XmlSigner.php
+  if (!xml || xml.trim() === '') {
+    throw new Error('Conteúdo XML vazio.')
+  }
+
+  const tagRegex = new RegExp(`<[^/][^>]*${tagName}`)
+  if (!tagRegex.test(xml)) {
+    throw new Error(`Tag ${tagName} não encontrada para assinatura.`)
+  }
+
+  const idRegex = new RegExp(`<[^>]*${tagName}[^>]*\\sId="([^"]*)"`)
+  const idMatch = idRegex.exec(xml)
+  if (!idMatch || idMatch[1] === '') {
+    throw new Error(`Tag a ser assinada deve possuir um atributo 'Id'.`)
+  }
+
   const sigAlgorithm = algorithm === 'SHA256'
     ? 'http://www.w3.org/2001/04/xmldsig-more#rsa-sha256'
     : 'http://www.w3.org/2000/09/xmldsig#rsa-sha1'

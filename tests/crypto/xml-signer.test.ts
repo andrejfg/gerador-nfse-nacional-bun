@@ -1,5 +1,13 @@
 import { describe, test, expect } from 'bun:test'
-import { compressXml, decompressXml } from '../../src/crypto/xml-signer.js'
+import { compressXml, decompressXml, signXml } from '../../src/crypto/xml-signer.js'
+import type { CertificateInfo } from '../../src/crypto/certificate.js'
+
+// Cert mínimo para testar guards (os throws ocorrem antes do uso real do cert)
+const FAKE_CERT: CertificateInfo = {
+  privateKeyPem: '---fake---',
+  certificatePem: '---fake---',
+  certificateClean: 'fakecert',
+}
 
 const SAMPLE_XML = `<?xml version="1.0" encoding="UTF-8"?><DPS xmlns="http://www.sped.fazenda.gov.br/nfse" versao="1.00"><infDPS Id="DPS31062001531936080001460010100000000000001"><tpAmb>2</tpAmb><CNPJ>53193608000146</CNPJ></infDPS></DPS>`
 
@@ -49,5 +57,43 @@ describe('decompressXml', () => {
 
   test('preserva string vazia no ciclo', async () => {
     expect(await decompressXml(await compressXml(''))).toBe('')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// signXml — guards de validação
+// Espelhado de nfse-php/tests/Unit/Signer/XmlSignerEdgeCasesTest.php
+// ---------------------------------------------------------------------------
+
+describe('signXml — guards', () => {
+  test('lança erro quando conteúdo XML está vazio', () => {
+    expect(() => signXml('', 'infDPS', FAKE_CERT)).toThrow('Conteúdo XML vazio.')
+  })
+
+  test('lança erro quando tag não existe no XML', () => {
+    const xml = '<DPS></DPS>'
+    expect(() => signXml(xml, 'infDPS', FAKE_CERT)).toThrow(
+      'Tag infDPS não encontrada para assinatura.',
+    )
+  })
+
+  test('lança erro quando atributo Id está ausente na tag', () => {
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<DPS xmlns="http://www.sped.fazenda.gov.br/nfse" versao="1.00">
+  <infDPS><tpAmb>2</tpAmb></infDPS>
+</DPS>`
+    expect(() => signXml(xml, 'infDPS', FAKE_CERT)).toThrow(
+      "Tag a ser assinada deve possuir um atributo 'Id'.",
+    )
+  })
+
+  test('lança erro quando atributo Id está presente mas vazio', () => {
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<DPS xmlns="http://www.sped.fazenda.gov.br/nfse" versao="1.00">
+  <infDPS Id=""><tpAmb>2</tpAmb></infDPS>
+</DPS>`
+    expect(() => signXml(xml, 'infDPS', FAKE_CERT)).toThrow(
+      "Tag a ser assinada deve possuir um atributo 'Id'.",
+    )
   })
 })
