@@ -10,7 +10,10 @@
     "test": "bun test tests/**/*.test.ts",
     "test:coverage": "bun test --coverage tests/**/*.test.ts",
     "typecheck": "bun tsc --noEmit",
-    "build": "bun build src/index.ts --outdir dist --target node"
+    "build": "bun build src/index.ts --outdir dist --target node",
+    "lint": "bunx biome check src/ tests/",
+    "lint:fix": "bunx biome check --write src/ tests/",
+    "format": "bunx biome format --write src/ tests/"
   },
   "dependencies": {
     "xml-crypto": "^6.0.1",
