@@ -30,6 +30,12 @@ export { signXml, compressXml, decompressXml } from './crypto/xml-signer.js'
 // Utils
 export { formatCpf, formatCnpj, formatCep, formatTelefone, onlyDigits } from './utils/cpf-cnpj.js'
 export { generateDpsId, generateNumDps, formatDataCompetencia, formatDhEmissao } from './utils/id-generator.js'
+export { generateCpf, generateCnpj } from './utils/cpf-cnpj-generator.js'
+export { calculateTax } from './utils/tax-calculator.js'
+
+// Validator
+export { validateDps } from './validator/dps-validator.js'
+export type { ValidationResult } from './validator/dps-validator.js'
 
 // HTTP client (baixo nível)
 export { SefinClient, NfseApiError } from './http/sefin-client.js'
