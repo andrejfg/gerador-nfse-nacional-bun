@@ -172,7 +172,7 @@ export interface LocalPrestacaoData {
 export interface CodigoServicoData {
   /**
    * Código de serviço da tributação nacional (`cServTribNac`), formato `XX.XX.XXXXX`.
-   * Tabela disponível em: https://www.nfse.gov.br/downloads/
+   * Tabela: https://www.gov.br/nfse/pt-br/mei-e-demais-empresas/codigos-de-tributacao-nacional-nbs
    * Ex.: `01.01.00163` = Desenvolvimento e licenciamento de programas de computador.
    */
   cServTribNac: string
@@ -358,8 +358,8 @@ export interface TributacaoData {
  * O DPS é o documento eletrônico estruturado emitido pelo contribuinte contendo
  * todas as informações necessárias para a geração da NFS-e pelo sistema SEFIN Nacional.
  *
- * **Referência:** Manual de Integração NFS-e Nacional, elemento `infDPS`
- * (https://www.nfse.gov.br/downloads/)
+ * **Referência:** API SEFIN Nacional — elemento `infDPS`
+ * https://sefin.nfse.gov.br/SefinNacional/docs/index
  */
 export interface InfDpsData {
   /**
@@ -443,8 +443,9 @@ export interface InfDpsData {
  *
  * **Fluxo:** DPS (emitente) → SEFIN Nacional → NFS-e (autorizada)
  *
- * **Referência:** NT 004/2021 — Manual de Integração NFS-e Nacional
- * https://www.nfse.gov.br/downloads/
+ * **Referência:** API SEFIN Nacional (Swagger)
+ * Produção: https://sefin.nfse.gov.br/SefinNacional/docs/index
+ * Homologação: https://sefin.producaorestrita.nfse.gov.br/API/SefinNacional/docs/index
  *
  * @example
  * ```ts

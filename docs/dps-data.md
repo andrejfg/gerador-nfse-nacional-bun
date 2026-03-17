@@ -10,8 +10,12 @@ de acesso de 43 dígitos.
 Contribuinte → DPS (assinado) → SEFIN Nacional → NFS-e (autorizada + chave de acesso)
 ```
 
-**Referência oficial:** Manual de Integração NFS-e Nacional (NT 004/2021)
-→ https://www.nfse.gov.br/downloads/
+**API SEFIN Nacional (Swagger):**
+- Produção: https://sefin.nfse.gov.br/SefinNacional/docs/index
+- Homologação: https://sefin.producaorestrita.nfse.gov.br/API/SefinNacional/docs/index
+
+**Códigos de tributação nacional (NBS):**
+→ https://www.gov.br/nfse/pt-br/mei-e-demais-empresas/codigos-de-tributacao-nacional-nbs
 
 ---
 
@@ -171,7 +175,7 @@ Localização no XML: elemento `serv` dentro de `infDPS`.
 
 | Campo | Tipo | Obrig. | XML | Descrição |
 |-------|------|--------|-----|-----------|
-| `cServTribNac` | `string` | **Sim** | `cServTribNac` | Código de serviço nacional, formato `XX.XX.XXXXX`. Tabela em https://www.nfse.gov.br/downloads/ |
+| `cServTribNac` | `string` | **Sim** | `cServTribNac` | Código de serviço nacional, formato `XX.XX.XXXXX`. Tabela em https://www.gov.br/nfse/pt-br/mei-e-demais-empresas/codigos-de-tributacao-nacional-nbs |
 | `cServMun` | `string` | Não | `cServMun` | Código do item da Lista de Serviços (LC 116/2003) no município. Ex.: `14.01`. |
 | `cNBSPrinc` | `string` | Não | `cNBSPrinc` | Código NBS (Nomenclatura Brasileira de Serviços), formato `X.XXXX.XX.XX`. |
 | `cIntContrib` | `string` | Não | `cIntContrib` | Código interno do contribuinte. Uso facultativo. |
