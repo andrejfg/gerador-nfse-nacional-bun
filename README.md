@@ -135,8 +135,8 @@ O sistema usa a **API SEFIN Nacional** (`sefin.nfse.gov.br`), que abrange todos 
 ## Referências
 
 - [API SEFIN Nacional – gov.br](https://www.nfse.gov.br/EmissorNacional/Login)
-- [nfse-php](https://github.com/nfse-nacional/nfse-php) — PHP SDK (origem)
-- [direction-nfse-danfe](https://github.com/JairoMarques/direction-nfse-danfe) — C# DANF-Se (origem)
+- [nfse-php](https://github.com/nfse-nacional/nfse-php) — PHP SDK utilizado como referência principal de implementação e suíte de testes
+- [direction-nfse-danfe](https://github.com/JairoMarques/direction-nfse-danfe) — C# DANF-Se utilizado como referência para geração do PDF e template HTML
 
 ## Licença
 
