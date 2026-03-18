@@ -12,7 +12,9 @@ import { formatCnpj, formatCpf, formatCep, formatTelefone } from '../utils/cpf-c
 import { DanfeEnvironment } from '../types/enums.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
-const ASSETS_DIR = join(__dirname, '../../assets')
+// bun build gera dist/index.js (bundle único) — __dirname aponta para dist/
+// portanto assets/ está um nível acima, não dois
+const ASSETS_DIR = join(__dirname, '../assets')
 const TEMPLATE_PATH = join(ASSETS_DIR, 'templates/danfe.html')
 const MUNICIPIOS_CSV = join(ASSETS_DIR, 'municipios.csv')
 
