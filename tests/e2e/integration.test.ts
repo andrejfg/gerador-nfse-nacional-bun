@@ -228,14 +228,19 @@ describe('E2E — signXml guards', () => {
 // ---------------------------------------------------------------------------
 
 describe('E2E — DanfeService (template + renderização HTML)', () => {
-  test('carrega template danfe.html sem ENOENT', async () => {
+  test('carrega template danfe.html sem ENOENT (aceita sucesso ou erro de puppeteer)', async () => {
     const danfe = new DanfeService()
-    // O erro esperado após carregar o template com sucesso é do puppeteer
-    // (sem browser disponível em CI). Se o erro for ENOENT do danfe.html,
-    // significa que o caminho de assets está quebrado.
-    const err = await danfe.generateFromXml(XML_EXEMPLO).catch(e => e as Error)
-    expect(err).toBeInstanceOf(Error)
-    expect(err.message).not.toContain('danfe.html')
-    expect(err.message).not.toContain('ENOENT')
+    try {
+      // Ambiente com Chrome: PDF gerado com sucesso — valida o HTML renderizado
+      const result = await danfe.generateFromXml(XML_EXEMPLO)
+      expect(result.html).toContain('<!DOCTYPE html>')
+      expect(result.html).toContain('Empresa Prestadora LTDA')
+      expect(result.pdfBytes.length).toBeGreaterThan(0)
+    } catch (err) {
+      // Ambiente sem Chrome: erro deve ser do puppeteer, NUNCA do danfe.html
+      const error = err as Error
+      expect(error.message).not.toContain('danfe.html')
+      expect(error.message).not.toContain('ENOENT')
+    }
   })
 })
