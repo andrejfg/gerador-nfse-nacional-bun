@@ -213,14 +213,19 @@ describe('E2E — utils', () => {
 
 // ---------------------------------------------------------------------------
 
+const FAKE_CERT_E2E = {
+  privateKeyPem: '', certificatePem: '', certificateClean: '',
+  expiresAt: new Date(), commonName: '', pfxBuffer: Buffer.alloc(0), password: '',
+}
+
 describe('E2E — signXml guards', () => {
   test('lança erro para XML vazio', () => {
-    expect(() => signXml('', 'infDPS', { privateKeyPem: '', certificatePem: '', certificateClean: '' }))
+    expect(() => signXml('', 'infDPS', FAKE_CERT_E2E))
       .toThrow('Conteúdo XML vazio.')
   })
 
   test('lança erro quando tag não existe', () => {
-    expect(() => signXml('<root/>', 'infDPS', { privateKeyPem: '', certificatePem: '', certificateClean: '' }))
+    expect(() => signXml('<root/>', 'infDPS', FAKE_CERT_E2E))
       .toThrow('Tag infDPS não encontrada')
   })
 })
