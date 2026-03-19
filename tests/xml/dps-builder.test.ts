@@ -144,4 +144,23 @@ describe('buildDpsXml', () => {
     dps.versao = '2.00'
     expect(buildDpsXml(dps)).toContain('versao="2.00"')
   })
+
+  test('inclui <interm> quando intermediário é fornecido', () => {
+    const dps = makeDps({
+      intermediario: {
+        cnpj: '11222333000181',
+        nome: 'Intermediário LTDA',
+        inscricaoMunicipal: '99887',
+      },
+    })
+    const xml = buildDpsXml(dps)
+    expect(xml).toContain('<interm>')
+    expect(xml).toContain('<CNPJ>11222333000181</CNPJ>')
+    expect(xml).toContain('<xNome>Intermediário LTDA</xNome>')
+    expect(xml).toContain('<IM>99887</IM>')
+  })
+
+  test('omite <interm> quando intermediário não é fornecido', () => {
+    expect(buildDpsXml(makeDps())).not.toContain('<interm>')
+  })
 })

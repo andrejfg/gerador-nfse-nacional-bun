@@ -148,6 +148,28 @@ describe('DpsValidator — tomador', () => {
     }))
     expect(result.isValid).toBe(true)
   })
+
+  test('tomador estrangeiro com NIF e cMun preenchido é válido', () => {
+    const result = validateDps(makeDps({
+      tomador: {
+        nif: 'US123456789',
+        nome: 'Foreign Corp',
+        endereco: { cMun: '3106200' },
+      },
+    }))
+    expect(result.isValid).toBe(true)
+  })
+
+  test('tomador estrangeiro com NIF sem cMun é válido', () => {
+    const result = validateDps(makeDps({
+      tomador: {
+        nif: 'US123456789',
+        nome: 'Foreign Corp',
+        endereco: { cMun: '' },
+      },
+    }))
+    expect(result.isValid).toBe(true)
+  })
 })
 
 // ---------------------------------------------------------------------------

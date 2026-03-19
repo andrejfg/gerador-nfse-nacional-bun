@@ -3,7 +3,7 @@
  * Migrado de direction-nfse-danfe/src/Danfe/Rendering/DanfeHtmlRenderer.cs
  */
 
-import { readFileSync } from 'node:fs'
+import { readFileSync, existsSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import QRCode from 'qrcode'
@@ -12,9 +12,10 @@ import { formatCnpj, formatCpf, formatCep, formatTelefone } from '../utils/cpf-c
 import { DanfeEnvironment } from '../types/enums.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
-// bun build gera dist/index.js (bundle único) — __dirname aponta para dist/
-// portanto assets/ está um nível acima, não dois
-const ASSETS_DIR = join(__dirname, '../assets')
+// bun build gera dist/index.js (bundle único) — __dirname aponta para dist/ → ../assets
+// em testes (src/danfe/) → ../../assets; tenta o mais próximo, cai no outro se não existir
+const _distAssets = join(__dirname, '../assets')
+const ASSETS_DIR = existsSync(_distAssets) ? _distAssets : join(__dirname, '../../assets')
 const TEMPLATE_PATH = join(ASSETS_DIR, 'templates/danfe.html')
 const MUNICIPIOS_CSV = join(ASSETS_DIR, 'municipios.csv')
 

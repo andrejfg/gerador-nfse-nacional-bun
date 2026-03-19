@@ -1,4 +1,5 @@
-import { describe, test, expect } from 'bun:test'
+import { describe, test, expect, beforeAll } from 'bun:test'
+import forge from 'node-forge'
 import { compressXml, decompressXml, signXml } from '../../src/crypto/xml-signer.js'
 import type { CertificateInfo } from '../../src/crypto/certificate.js'
 
@@ -7,6 +8,10 @@ const FAKE_CERT: CertificateInfo = {
   privateKeyPem: '---fake---',
   certificatePem: '---fake---',
   certificateClean: 'fakecert',
+  expiresAt: new Date(),
+  commonName: 'fakecert',
+  pfxBuffer: Buffer.from('fakecert'),
+  password: 'fakecert',
 }
 
 const SAMPLE_XML = `<?xml version="1.0" encoding="UTF-8"?><DPS xmlns="http://www.sped.fazenda.gov.br/nfse" versao="1.00"><infDPS Id="DPS31062001531936080001460010100000000000001"><tpAmb>2</tpAmb><CNPJ>53193608000146</CNPJ></infDPS></DPS>`
@@ -95,5 +100,57 @@ describe('signXml — guards', () => {
     expect(() => signXml(xml, 'infDPS', FAKE_CERT)).toThrow(
       "Tag a ser assinada deve possuir um atributo 'Id'.",
     )
+  })
+})
+
+// ---------------------------------------------------------------------------
+// signXml — assinatura real (cobre linhas 42-81)
+// ---------------------------------------------------------------------------
+
+let REAL_CERT: CertificateInfo
+
+beforeAll(() => {
+  const keyPair = forge.pki.rsa.generateKeyPair(1024)
+  const cert = forge.pki.createCertificate()
+  cert.publicKey = keyPair.publicKey
+  cert.serialNumber = '01'
+  cert.validity.notBefore = new Date()
+  cert.validity.notAfter = new Date()
+  cert.validity.notAfter.setFullYear(cert.validity.notBefore.getFullYear() + 1)
+  const attrs = [{ name: 'commonName', value: 'Test' }]
+  cert.setSubject(attrs)
+  cert.setIssuer(attrs)
+  cert.sign(keyPair.privateKey, forge.md.sha256.create())
+
+  const privateKeyPem = forge.pki.privateKeyToPem(keyPair.privateKey)
+  const certificatePem = forge.pki.certificateToPem(cert)
+  const certificateClean = certificatePem
+    .replace(/-----BEGIN CERTIFICATE-----\r?\n?/, '')
+    .replace(/-----END CERTIFICATE-----\r?\n?/, '')
+    .replace(/\r?\n/g, '')
+
+  REAL_CERT = { privateKeyPem, certificatePem, certificateClean, expiresAt: new Date(), commonName: 'Test', pfxBuffer: Buffer.from('Test'), password: 'Test' }
+})
+
+const XML_WITH_ID = `<?xml version="1.0" encoding="UTF-8"?><DPS xmlns="http://www.sped.fazenda.gov.br/nfse" versao="1.00"><infDPS Id="DPS001"><tpAmb>2</tpAmb></infDPS></DPS>`
+
+describe('signXml — assinatura real', () => {
+  test('produz XML assinado com SHA256 (padrão)', () => {
+    const signed = signXml(XML_WITH_ID, 'infDPS', REAL_CERT)
+    expect(signed).toContain('<Signature')
+    expect(signed).toContain('<X509Certificate>')
+    expect(signed).toContain(REAL_CERT.certificateClean)
+  })
+
+  test('produz XML assinado com SHA1', () => {
+    const signed = signXml(XML_WITH_ID, 'infDPS', REAL_CERT, 'SHA1')
+    expect(signed).toContain('<Signature')
+    expect(signed).toContain('sha1')
+  })
+
+  test('XML assinado ainda contém o conteúdo original', () => {
+    const signed = signXml(XML_WITH_ID, 'infDPS', REAL_CERT)
+    expect(signed).toContain('<tpAmb>2</tpAmb>')
+    expect(signed).toContain('Id="DPS001"')
   })
 })
