@@ -65,6 +65,9 @@ const dps: DpsData = {
         nro: '1500',
         xBairro: 'Centro',
       },
+      regimeTributario: {
+        opSimpNac: OpcaoSimplesNacional.Optante,
+      },
     },
 
     tomador: {
@@ -97,9 +100,6 @@ const dps: DpsData = {
         tributacaoIssqn: TributacaoIssqn.TributadaMunicipioPrestador,
         aliquota: 0.05,
         tipoRetencaoIssqn: TipoRetencaoIssqn.NaoRetido,
-      },
-      regTrib: {
-        opSimpNac: OpcaoSimplesNacional.Optante,
       },
     },
   },
