@@ -39,10 +39,17 @@ jobs:
       # Testes — roda toda a suite com cobertura
       # ------------------------------------------------------------------
       - name: Tests
-        run: bun test --coverage tests/**/*.test.ts
+        run: bun test --coverage tests/crypto tests/utils tests/validator tests/xml
 
       # ------------------------------------------------------------------
       # Build — gera JS (ESM, sem bundlar deps) + declarações .d.ts
       # ------------------------------------------------------------------
       - name: Build
         run: bun run build
+
+      # ------------------------------------------------------------------
+      # E2E — importa do dist/ como consumidor externo para detectar
+      # erros de integração (caminhos de assets, exports ausentes etc.)
+      # ------------------------------------------------------------------
+      - name: E2E Integration Tests
+        run: bun run test:e2e
