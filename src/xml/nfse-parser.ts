@@ -2,6 +2,10 @@
  * Parser do XML da NFS-e
  * Migrado de nfse-php/src/Xml/NfseXmlParser.php
  * e direction-nfse-danfe/src/Danfe/Schemas/NFSeSchema.cs
+ *
+ * Diferenças importantes entre emit e toma:
+ *  - emit.enderNac  → todos os campos (xLgr, nro, xBairro, cMun, UF, CEP) direto no <enderNac>
+ *  - toma/interm.end → xLgr/nro/xCpl/xBairro direto em <end>; cMun/CEP aninhados em <end><endNac>
  */
 
 import { XMLParser } from 'fast-xml-parser'
@@ -15,6 +19,10 @@ const xmlParser = new XMLParser({
   trimValues: true,
 })
 
+// ---------------------------------------------------------------------------
+// API pública
+// ---------------------------------------------------------------------------
+
 export function parseNfseXml(xml: string): NfseSchema {
   const sanitized = xml
     .replace(/^\uFEFF/, '')
@@ -26,133 +34,212 @@ export function parseNfseXml(xml: string): NfseSchema {
   return extractNfseSchema(root)
 }
 
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function str(v: unknown, fallback = ''): string {
+  return v != null && v !== '' ? String(v) : fallback
+}
+
+function num(v: unknown): number {
+  const n = Number(v)
+  return isNaN(n) ? 0 : n
+}
+
+function rec(v: unknown): Record<string, unknown> | undefined {
+  return v && typeof v === 'object' ? v as Record<string, unknown> : undefined
+}
+
+// ---------------------------------------------------------------------------
+// Extratores
+// ---------------------------------------------------------------------------
+
 function extractNfseSchema(root: Record<string, unknown>): NfseSchema {
-  const infNFSe = (root?.['infNFSe'] ?? root?.['InfNFSe'] ?? root) as Record<string, unknown>
+  const inf = rec(root?.['infNFSe'] ?? root?.['InfNFSe']) ?? root
   return {
-    versao: root?.['@_versao'] as string | undefined,
-    infNFSe: infNFSe ? {
-      id: infNFSe?.['@_Id'] as string | undefined,
-      cStat: String(infNFSe?.['cStat'] ?? ''),
-      xMotivo: String(infNFSe?.['xMotivo'] ?? ''),
-      chNFSe: String(infNFSe?.['chNFSe'] ?? ''),
-      nNFSe: String(infNFSe?.['nNFSe'] ?? ''),
-      dhProc: String(infNFSe?.['dhProc'] ?? ''),
-      xLocEmi: String(infNFSe?.['xLocEmi'] ?? ''),
-      xLocPrestacao: String(infNFSe?.['xLocPrestacao'] ?? ''),
-      cLocIncid: String(infNFSe?.['cLocIncid'] ?? ''),
-      xTribNac: String(infNFSe?.['xTribNac'] ?? ''),
-      xTribMun: String(infNFSe?.['xTribMun'] ?? ''),
-      xNBS: String(infNFSe?.['xNBS'] ?? ''),
-      verAplic: String(infNFSe?.['verAplic'] ?? ''),
-      ambGer: Number(infNFSe?.['ambGer'] ?? 0),
-      tpEmis: Number(infNFSe?.['tpEmis'] ?? 0),
-      procEmi: Number(infNFSe?.['procEmi'] ?? 0),
-      emit: extractEmit(infNFSe?.['emit'] as Record<string, unknown>),
-      DPS: extractDps(infNFSe?.['DPS'] as Record<string, unknown>),
-      valores: extractValores(infNFSe?.['valores'] as Record<string, unknown>),
+    versao: str(root?.['@_versao']) || undefined,
+    infNFSe: inf ? {
+      id:            str(inf['@_Id']) || undefined,
+      cStat:         str(inf['cStat']),
+      xMotivo:       str(inf['xMotivo']),
+      chNFSe:        str(inf['chNFSe']),
+      nNFSe:         str(inf['nNFSe']),
+      nDFSe:         str(inf['nDFSe']),
+      dhProc:        str(inf['dhProc']),
+      xLocEmi:       str(inf['xLocEmi']),
+      xLocPrestacao: str(inf['xLocPrestacao']),
+      cLocIncid:     str(inf['cLocIncid']),
+      xLocIncid:     str(inf['xLocIncid']),
+      xTribNac:      str(inf['xTribNac']),
+      xTribMun:      str(inf['xTribMun']),
+      xNBS:          str(inf['xNBS']),
+      verAplic:      str(inf['verAplic']),
+      ambGer:        num(inf['ambGer']),
+      tpEmis:        num(inf['tpEmis']),
+      procEmi:       num(inf['procEmi']),
+      emit:          extractEmit(rec(inf['emit'])),
+      DPS:           extractDps(rec(inf['DPS'])),
+      valores:       extractValoresNfse(rec(inf['valores'])),
     } : undefined,
   }
 }
 
+/**
+ * Emitente da NFS-e — endereço em <enderNac> (todos os campos planos)
+ */
 function extractEmit(emit: Record<string, unknown> | undefined): EmitSchema | undefined {
   if (!emit) return undefined
   return {
-    CNPJ: String(emit?.['CNPJ'] ?? ''),
-    CPF: String(emit?.['CPF'] ?? ''),
-    IM: String(emit?.['IM'] ?? ''),
-    xNome: String(emit?.['xNome'] ?? ''),
-    xFant: String(emit?.['xFant'] ?? ''),
-    enderNac: extractEndereco(emit?.['enderNac'] as Record<string, unknown>),
-    fone: String(emit?.['fone'] ?? ''),
-    email: String(emit?.['email'] ?? ''),
-    regTrib: emit?.['regTrib'] ? {
-      opSimpNac: Number((emit['regTrib'] as Record<string, unknown>)?.['opSimpNac'] ?? 0),
-      regApurSN: Number((emit['regTrib'] as Record<string, unknown>)?.['regApurSN'] ?? 0),
-      regEspTrib: Number((emit['regTrib'] as Record<string, unknown>)?.['regEspTrib'] ?? 0),
-    } : undefined,
+    CNPJ:     str(emit['CNPJ']),
+    CPF:      str(emit['CPF']),
+    IM:       str(emit['IM']),
+    xNome:    str(emit['xNome']),
+    xFant:    str(emit['xFant']),
+    enderNac: extractEnderecoPlano(rec(emit['enderNac'])),
+    fone:     str(emit['fone']),
+    email:    str(emit['email']),
+    regTrib:  extractRegTrib(rec(emit['regTrib'])),
   }
 }
 
-function extractEndereco(end: Record<string, unknown> | undefined): EnderNacSchema | undefined {
-  if (!end) return undefined
-  return {
-    xLgr: String(end?.['xLgr'] ?? ''),
-    nro: String(end?.['nro'] ?? ''),
-    xCpl: String(end?.['xCpl'] ?? ''),
-    xBairro: String(end?.['xBairro'] ?? ''),
-    cMun: String(end?.['cMun'] ?? ''),
-    UF: String(end?.['UF'] ?? ''),
-    CEP: String(end?.['CEP'] ?? ''),
-    cPais: String(end?.['cPais'] ?? '1058'),
-  }
-}
-
+/**
+ * Tomador / intermediário — endereço em <end> com <endNac> aninhado para cMun/CEP
+ */
 function extractTomador(toma: Record<string, unknown> | undefined): TomadorSchema | undefined {
   if (!toma) return undefined
+  const end    = rec(toma['end'])
+  const endNac = end ? rec(end['endNac']) : undefined
   return {
-    CNPJ: String(toma?.['CNPJ'] ?? ''),
-    CPF: String(toma?.['CPF'] ?? ''),
-    IM: String(toma?.['IM'] ?? ''),
-    xNome: String(toma?.['xNome'] ?? ''),
-    enderNac: extractEndereco(toma?.['enderNac'] as Record<string, unknown>),
-    fone: String(toma?.['fone'] ?? ''),
-    email: String(toma?.['email'] ?? ''),
+    CNPJ:     str(toma['CNPJ']),
+    CPF:      str(toma['CPF']),
+    IM:       str(toma['IM']),
+    xNome:    str(toma['xNome']),
+    enderNac: end ? {
+      xLgr:    str(end['xLgr']),
+      nro:     str(end['nro']),
+      xCpl:    str(end['xCpl']),
+      xBairro: str(end['xBairro']),
+      cMun:    str(endNac?.['cMun'] ?? end['cMun']),
+      UF:      str(endNac?.['UF']   ?? end['UF']),
+      CEP:     str(endNac?.['CEP']  ?? end['CEP']),
+      cPais:   str(endNac?.['cPais'] ?? end['cPais'], '1058'),
+    } : extractEnderecoPlano(rec(toma['enderNac'])),
+    fone:  str(toma['fone']),
+    email: str(toma['email']),
+  }
+}
+
+/**
+ * Endereço plano — todos os campos como filhos diretos do elemento (usado em <enderNac> do emit)
+ */
+function extractEnderecoPlano(end: Record<string, unknown> | undefined): EnderNacSchema | undefined {
+  if (!end) return undefined
+  return {
+    xLgr:    str(end['xLgr']),
+    nro:     str(end['nro']),
+    xCpl:    str(end['xCpl']),
+    xBairro: str(end['xBairro']),
+    cMun:    str(end['cMun']),
+    UF:      str(end['UF']),
+    CEP:     str(end['CEP']),
+    cPais:   str(end['cPais'], '1058'),
+  }
+}
+
+function extractRegTrib(r: Record<string, unknown> | undefined) {
+  if (!r) return undefined
+  return {
+    opSimpNac:  num(r['opSimpNac']),
+    regApurSN:  num(r['regApurSN']),
+    regEspTrib: num(r['regEspTrib']),
   }
 }
 
 function extractDps(dps: Record<string, unknown> | undefined): DpsSchema | undefined {
   if (!dps) return undefined
-  const infDPS = (dps?.['infDPS'] ?? dps) as Record<string, unknown>
-  const serv = infDPS?.['serv'] as Record<string, unknown> | undefined
-  const cServ = serv?.['cServ'] as Record<string, unknown> | undefined
+  const infDPS = rec(dps['infDPS']) ?? dps
+  const serv   = rec(infDPS['serv'])
+  const cServ  = serv ? rec(serv['cServ']) : undefined
+  const locPrest = serv ? rec(serv['locPrest']) : undefined
+
   return {
     infDPS: {
-      tpAmb: Number(infDPS?.['tpAmb'] ?? 1),
-      nDPS: String(infDPS?.['nDPS'] ?? ''),
-      serie: String(infDPS?.['serie'] ?? ''),
-      dhEmi: String(infDPS?.['dhEmi'] ?? ''),
-      dCompet: String(infDPS?.['dCompet'] ?? ''),
-      prest: extractEmit(infDPS?.['prest'] as Record<string, unknown>),
-      toma: extractTomador(infDPS?.['toma'] as Record<string, unknown>),
-      interm: extractTomador(infDPS?.['interm'] as Record<string, unknown>),
+      tpAmb:    num(infDPS['tpAmb']),
+      verAplic: str(infDPS['verAplic']),
+      serie:    str(infDPS['serie']),
+      nDPS:     str(infDPS['nDPS']),
+      dhEmi:    str(infDPS['dhEmi']),
+      dCompet:  str(infDPS['dCompet']),
+      tpEmit:   num(infDPS['tpEmit']),
+      cLocEmi:  str(infDPS['cLocEmi']),
+      prest:    extractEmit(rec(infDPS['prest'])),
+      toma:     extractTomador(rec(infDPS['toma'])),
+      interm:   extractTomador(rec(infDPS['interm'])),
       serv: serv ? {
-        xDescServ: String(serv?.['xDescServ'] ?? ''),
-        cServTribNac: String(cServ?.['cServTribNac'] ?? ''),
-        cServMun: String(cServ?.['cServMun'] ?? ''),
-        xNBS: String(serv?.['xNBS'] ?? ''),
-        xCOD: String(serv?.['xCOD'] ?? ''),
-        xCLS: String((serv?.['locPrest'] as Record<string, unknown>)?.['xCLS'] ?? ''),
-        xPA: String((serv?.['locPrest'] as Record<string, unknown>)?.['xPA'] ?? ''),
-        xInfComp: String(serv?.['xInfComp'] ?? ''),
+        // xDescServ e cTribNac ficam dentro de <cServ>, não diretamente em <serv>
+        xDescServ:    str(cServ?.['xDescServ']),
+        cTribNac:     str(cServ?.['cTribNac']),
+        cServMun:     str(cServ?.['cTribMun']),
+        cNBS:         str(cServ?.['cNBS']),
+        cIntContrib:  str(cServ?.['cIntContrib']),
+        cLocPrestacao: str(locPrest?.['cLocPrestacao']),
+        xInfComp:     str(serv['xInfComp']),
       } : undefined,
-      valores: extractValores(infDPS?.['valores'] as Record<string, unknown>),
+      valores: extractValoresDps(rec(infDPS['valores'])),
     },
   }
 }
 
-function extractValores(val: Record<string, unknown> | undefined): ValoresNfseSchema | undefined {
+/**
+ * Valores da NFS-e (infNFSe.valores) — campos calculados pela SEFIN
+ * Nota: vServico não vem aqui; o renderer usa o valor do DPS quando disponível.
+ */
+function extractValoresNfse(val: Record<string, unknown> | undefined): ValoresNfseSchema | undefined {
   if (!val) return undefined
   return {
-    vServico: Number(val?.['vServico'] ?? 0),
-    vBC: Number(val?.['vBC'] ?? 0),
-    pAliqAplic: Number(val?.['pAliqAplic'] ?? 0),
-    vISSQN: Number(val?.['vISSQN'] ?? 0),
-    vTotalRet: Number(val?.['vTotalRet'] ?? 0),
-    vLiq: Number(val?.['vLiq'] ?? 0),
-    vCalcDR: Number(val?.['vCalcDR'] ?? 0),
-    vCalcBM: Number(val?.['vCalcBM'] ?? 0),
-    vDescCondicionado: Number(val?.['vDescCondicionado'] ?? 0),
-    vDescIncondicionado: Number(val?.['vDescIncondicionado'] ?? 0),
-    IRRF: Number(val?.['vRetIRRF'] ?? 0),
-    CP: Number(val?.['CP'] ?? 0),
-    CSLL: Number(val?.['vRetCSLL'] ?? 0),
-    PIS: Number(val?.['vPis'] ?? 0),
-    COFINS: Number(val?.['vCofins'] ?? 0),
+    vBC:                 num(val['vBC']),
+    pAliqAplic:          num(val['pAliqAplic']),
+    vISSQN:              num(val['vISSQN']),
+    vLiq:                num(val['vLiq']),
+    vServico:            num(val['vServico']),   // presente em algumas versões / fallback para DPS
+    vCalcBM:             num(val['vCalcBM']),
+    vCalcDR:             num(val['vCalcDR']),
+    vTotalRet:           num(val['vTotalRet']),
+    vDescCondicionado:   num(val['vDescCondicionado']),
+    vDescIncondicionado: num(val['vDescIncondicionado']),
+    IRRF:                num(val['vRetIRRF']),
+    CP:                  num(val['CP']),
+    CSLL:                num(val['vRetCSLL']),
+    PIS:                 num(val['vPis']),
+    COFINS:              num(val['vCofins']),
+  }
+}
+
+/**
+ * Valores do DPS (infDPS.valores) — estrutura diferente da NFS-e
+ *   <vServPrest><vServ/></vServPrest>
+ *   <trib><tribMun/><tribFed/><totTrib/></trib>
+ */
+function extractValoresDps(val: Record<string, unknown> | undefined): ValoresDpsSchema | undefined {
+  if (!val) return undefined
+  const vServPrest = rec(val['vServPrest'])
+  const trib       = rec(val['trib'])
+  const tribMun    = trib ? rec(trib['tribMun']) : undefined
+  const totTrib    = trib ? rec(trib['totTrib']) : undefined
+  const pTotTrib   = totTrib ? rec(totTrib['pTotTrib']) : undefined
+  return {
+    vServ:         num(vServPrest?.['vServ']),
+    tribISSQN:     str(tribMun?.['tribISSQN']),
+    tpRetISSQN:    str(tribMun?.['tpRetISSQN']),
+    pTotTribFed:   num(pTotTrib?.['pTotTribFed']),
+    pTotTribEst:   num(pTotTrib?.['pTotTribEst']),
+    pTotTribMun:   num(pTotTrib?.['pTotTribMun']),
   }
 }
 
 // ---------------------------------------------------------------------------
-// Schemas
+// Schemas (interfaces de saída)
 // ---------------------------------------------------------------------------
 
 export interface NfseSchema {
@@ -164,12 +251,17 @@ export interface InfNFSeSchema {
   id?: string
   cStat: string
   xMotivo: string
+  /** Chave de acesso (44 dígitos) */
   chNFSe: string
+  /** Número sequencial da NFS-e no município */
   nNFSe: string
+  /** Número do DFSe no sistema nacional */
+  nDFSe: string
   dhProc: string
   xLocEmi: string
   xLocPrestacao: string
   cLocIncid: string
+  xLocIncid: string
   xTribNac: string
   xTribMun: string
   xNBS: string
@@ -179,6 +271,7 @@ export interface InfNFSeSchema {
   procEmi: number
   emit?: EmitSchema
   DPS?: DpsSchema
+  /** Valores calculados pela SEFIN (alíquota aplicada, ISSQN, base de cálculo) */
   valores?: ValoresNfseSchema
 }
 
@@ -188,6 +281,7 @@ export interface EmitSchema {
   IM: string
   xNome: string
   xFant: string
+  /** Endereço plano (todos os campos dentro de <enderNac>) */
   enderNac?: EnderNacSchema
   fone: string
   email: string
@@ -199,6 +293,7 @@ export interface TomadorSchema {
   CPF: string
   IM: string
   xNome: string
+  /** Endereço extraído de <end>/<endNac> */
   enderNac?: EnderNacSchema
   fone: string
   email: string
@@ -218,36 +313,39 @@ export interface EnderNacSchema {
 export interface DpsSchema {
   infDPS: {
     tpAmb: number
-    nDPS: string
+    verAplic: string
     serie: string
+    nDPS: string
     dhEmi: string
     dCompet: string
+    tpEmit: number
+    cLocEmi: string
     prest?: EmitSchema
     toma?: TomadorSchema
     interm?: TomadorSchema
     serv?: {
       xDescServ: string
-      cServTribNac: string
+      cTribNac: string
       cServMun: string
-      xNBS: string
-      xCOD: string
-      xCLS: string
-      xPA: string
+      cNBS: string
+      cIntContrib: string
+      cLocPrestacao: string
       xInfComp: string
     }
-    valores?: ValoresNfseSchema
+    valores?: ValoresDpsSchema
   }
 }
 
 export interface ValoresNfseSchema {
+  /** Valor do serviço (presente em algumas versões de resposta; usar DPS como fallback) */
   vServico: number
   vBC: number
   pAliqAplic: number
   vISSQN: number
-  vTotalRet: number
   vLiq: number
-  vCalcDR: number
   vCalcBM: number
+  vCalcDR: number
+  vTotalRet: number
   vDescCondicionado: number
   vDescIncondicionado: number
   IRRF: number
@@ -255,4 +353,13 @@ export interface ValoresNfseSchema {
   CSLL: number
   PIS: number
   COFINS: number
+}
+
+export interface ValoresDpsSchema {
+  vServ: number
+  tribISSQN: string
+  tpRetISSQN: string
+  pTotTribFed: number
+  pTotTribEst: number
+  pTotTribMun: number
 }

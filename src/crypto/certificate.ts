@@ -7,6 +7,7 @@
 
 import forge from 'node-forge'
 import { readFileSync } from 'node:fs'
+import type { NfseContext } from '../types/context.js'
 
 export interface CertificateInfo {
   privateKeyPem: string
@@ -63,6 +64,16 @@ export function loadCertificate(pfxPathOrBuffer: string | Buffer, password: stri
   const commonName = cn?.value ?? 'Desconhecido'
 
   return { privateKeyPem, certificatePem, certificateClean, expiresAt, commonName, pfxBuffer, password }
+}
+
+export function resolveCertSource(context: NfseContext): string | Buffer {
+  if (context.certificateData) {
+    return Buffer.isBuffer(context.certificateData)
+      ? context.certificateData
+      : Buffer.from(context.certificateData)
+  }
+  if (context.certificatePath) return context.certificatePath
+  throw new Error('Informe certificatePath ou certificateData no contexto NfseContext')
 }
 
 export function signWithKey(content: string, privateKeyPem: string, algorithm: 'SHA1' | 'SHA256' = 'SHA256'): Buffer {

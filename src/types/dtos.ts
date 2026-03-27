@@ -15,6 +15,8 @@ import type {
   RegimeEspecialTributacao,
   MotivoEmissaoTomadorIntermediario,
   IndicadorTotalTributos,
+  TipoEvento,
+  MotivoEventoCancelamento,
 } from './enums.js'
 
 // ---------------------------------------------------------------------------
@@ -167,19 +169,20 @@ export interface LocalPrestacaoData {
 /**
  * Classificação fiscal do serviço (`cServ` no XML).
  * O código de serviço nacional (`cServTribNac`) é definido pela Receita Federal
- * na tabela de serviços da NFS-e Nacional e segue o padrão `XX.XX.XXXXX`.
+ * na tabela de serviços da NFS-e Nacional e segue o padrão `XXXXXXXXX`.
  */
 export interface CodigoServicoData {
   /**
-   * Código de serviço da tributação nacional (`cServTribNac`), formato `XX.XX.XXXXX`.
+   * Código de serviço da tributação nacional (`cServTribNac`), formato `XXXXXXXXX`.
    * Tabela: https://www.gov.br/nfse/pt-br/mei-e-demais-empresas/codigos-de-tributacao-nacional-nbs
-   * Ex.: `01.01.00163` = Desenvolvimento e licenciamento de programas de computador.
+   * Ex.: `010100163` = Desenvolvimento e licenciamento de programas de computador.
    */
   cServTribNac: string
   /**
-   * Código de serviço municipal (`cServMun`), conforme tabela do município.
-   * Corresponde ao item da Lista de Serviços da LC 116/2003.
-   * Ex.: `1.01`, `14.01`.
+   * Código de tributação municipal (`cServMun` → `cTribMun`).
+   * Conforme XSD v1.01 (TCCodTribMun): exatamente **3 dígitos numéricos**.
+   * Obtido via `ConsultarDadosCadastrais` → `Atividades[].cTribMun`.
+   * Ex.: `'109'`, `'142'`.
    */
   cServMun?: string
   /**
@@ -280,6 +283,12 @@ export interface IssqnData {
 export interface ValoresServicoData {
   /** Valor bruto total do serviço prestado (`vServico`). */
   vServico: number
+  /**
+   * Valor recebido pelo **intermediário** do serviço (`vReceb`).
+   * Só deve ser informado quando `tipoEmitente = 3` (Intermediário).
+   * Proibido para prestador (1) e tomador (2) — erro E0424 da API.
+   */
+  vReceb?: number
   /** Valor do desconto condicionado (`vDescCondicionado`). */
   vDescCondicionado?: number
   /** Valor do desconto incondicionado (`vDescIncondicionado`). */
@@ -335,17 +344,103 @@ export interface TributacaoData {
    * Conforme faixa de receita bruta da tabela do Simples.
    */
   percentualTotalTributosSN?: number
-  /** Valor total dos tributos federais incidentes sobre o serviço. */
+  /** Valor total dos tributos federais incidentes sobre o serviço (`vTotTribFed`). */
   valorTotalTributosFederais?: number
-  /** Valor total dos tributos estaduais incidentes sobre o serviço. */
+  /** Valor total dos tributos estaduais incidentes sobre o serviço (`vTotTribEst`). */
   valorTotalTributosEstaduais?: number
-  /** Valor total dos tributos municipais (inclui ISSQN). */
+  /** Valor total dos tributos municipais, inclui ISSQN (`vTotTribMun`). */
   valorTotalTributosMunicipais?: number
   /**
+   * Percentual total aproximado dos tributos federais (`pTotTribFed`).
+   * Usar para Não Optante quando município está ativo no SNNFSe (E0713).
+   * Ex.: `11.33` para 11,33%.
+   */
+  percentualTotalTributosFederais?: number
+  /**
+   * Percentual total aproximado dos tributos estaduais (`pTotTribEst`).
+   * Ex.: `0.00`.
+   */
+  percentualTotalTributosEstaduais?: number
+  /**
+   * Percentual total aproximado dos tributos municipais (`pTotTribMun`).
+   * Ex.: `2.00` para 2%.
+   */
+  percentualTotalTributosMunicipais?: number
+  /**
    * Indica se o valor total de tributos foi informado (`indTotTrib`).
-   * Obrigatório para exibição no DANF-Se conforme Lei 12.741/2012.
+   * **Proibido para Não Optante (opSimpNac=1)** — use percentual* ou valorTotal* — E0713.
    */
   indicadorTotalTributos?: IndicadorTotalTributos
+}
+
+// ---------------------------------------------------------------------------
+// IBS/CBS (v1.01 — Reforma Tributária)
+// ---------------------------------------------------------------------------
+
+/**
+ * Classificação tributária IBS/CBS (`gIBSCBS` no XML).
+ * Ref XSD: `TCRTCInfoTributosSitClas`
+ */
+export interface IbsCbsGIbsCbsData {
+  /** CST — Código de Situação Tributária IBS/CBS (3 dígitos, ex: `"000"` = tributação plena). */
+  CST: string
+  /** cClassTrib — Código de Classificação Tributária (6 dígitos). */
+  cClassTrib: string
+  /** cCredPres — Código de Crédito Presumido (opcional). */
+  cCredPres?: string
+}
+
+/**
+ * Valores tributários IBS/CBS.
+ * Ref XSD: `TCRTCInfoValoresIBSCBS`
+ */
+export interface IbsCbsValoresData {
+  trib: {
+    gIBSCBS: IbsCbsGIbsCbsData
+  }
+}
+
+/**
+ * Grupo IBS/CBS — **obrigatório** na DPS versão 1.01 (Reforma Tributária).
+ * Ref XSD: `TCRTCInfoIBSCBS`
+ *
+ * @example
+ * ```ts
+ * ibsCbs: {
+ *   finNFSe: '0',
+ *   cIndOp: '100000', // consultar tabela oficial
+ *   indDest: '0',
+ *   valores: { trib: { gIBSCBS: { CST: '000', cClassTrib: '010100' } } },
+ * }
+ * ```
+ */
+export interface IbsCbsData {
+  /** finNFSe — Finalidade da emissão: `'0'` = NFS-e regular. */
+  finNFSe: '0'
+  /**
+   * cIndOp — Código indicador da operação de fornecimento (6 dígitos).
+   * Consulte a tabela "código indicador de operação" do Manual NFS-e Nacional.
+   */
+  cIndOp: string
+  /**
+   * indDest — Indicador de destinatário:
+   * `'0'` = destinatário é o próprio tomador,
+   * `'1'` = destinatário é diferente do tomador.
+   */
+  indDest: '0' | '1'
+  /** indFinal — Operação de uso/consumo pessoal (art. 57): `'0'` = Não, `'1'` = Sim. */
+  indFinal?: '0' | '1'
+  /**
+   * tpOper — Tipo de operação com entes governamentais:
+   * `'1'` Fornecimento com pagamento posterior,
+   * `'2'` Recebimento do pagamento com fornecimento já realizado,
+   * `'3'` Fornecimento com pagamento já realizado,
+   * `'4'` Recebimento do pagamento com fornecimento posterior,
+   * `'5'` Fornecimento e recebimento concomitantes.
+   */
+  tpOper?: '1' | '2' | '3' | '4' | '5'
+  /** valores — Informações de tributação IBS/CBS para o serviço. */
+  valores: IbsCbsValoresData
 }
 
 // ---------------------------------------------------------------------------
@@ -393,7 +488,7 @@ export interface InfDpsData {
    */
   numeroDps: string
   /**
-   * Competência tributária do serviço no formato `YYYY-MM` (`dCompet`).
+   * Competência tributária do serviço no formato `YYYY-MM-DD` (`dCompet`).
    * Define o mês/ano de referência para apuração e recolhimento do ISSQN.
    * Ex.: `2024-03` para serviços prestados em março de 2024.
    */
@@ -432,6 +527,14 @@ export interface InfDpsData {
   valores: ValoresServicoData
   /** Tributação completa — ISSQN e tributos federais (`trib`). */
   tributacao?: TributacaoData
+  /**
+   * Grupo IBS/CBS — **opcional** durante o período de transição da Reforma Tributária.
+   * O Comitê Gestor do IBS dispensou penalidades pelo não preenchimento enquanto
+   * os regulamentos do IBS/CBS não forem publicados. Omita para replicar o comportamento
+   * do EmissorWeb (que não inclui o bloco). Quando informado, use `finNFSe: '0'`,
+   * `cIndOp` (6 dígitos — consulte Anexo VII), `indDest` e `valores.trib.gIBSCBS`.
+   */
+  ibsCbs?: IbsCbsData
 }
 
 /**
@@ -512,6 +615,10 @@ export interface NfseData {
 export interface EmissaoNfseResponse {
   cStat: string
   xMotivo: string
+  /** Chave de acesso da NFS-e emitida — use para consultar, cancelar ou baixar a DANF-Se. */
+  chaveAcesso?: string
+  /** ID da NFS-e gerada pela SEFIN (`idDps` no JSON de resposta). */
+  idNfse?: string
   nfse?: NfseData
   dps?: DpsData
   nfseXmlGZipB64?: string
@@ -524,26 +631,49 @@ export interface ConsultaNfseResponse {
 }
 
 export interface ConsultaDpsResponse {
-  cStat: string
-  xMotivo: string
-  situacao?: string
+  /**
+   * Chave de acesso da NFS-e correspondente à DPS consultada.
+   * Retornada apenas se o certificado do solicitante corresponder a um ator da NFS-e
+   * (Prestador, Tomador ou Intermediário).
+   */
+  chaveAcesso?: string
+  /** Campos de erro quando a DPS não é localizada ou o acesso é negado. */
+  cStat?: string
+  xMotivo?: string
 }
 
 export interface RegistroEventoResponse {
+  /** Código de status do processamento (extraído do XML do evento retornado). */
   cStat: string
+  /** Descrição do status. */
   xMotivo: string
-  xml?: string
+  /** Base64+GZip do XML de retorno do evento, se disponível. */
+  eventoXmlGZipB64?: string
 }
 
 // ---------------------------------------------------------------------------
 // Evento (cancelamento, etc.)
 // ---------------------------------------------------------------------------
 export interface PedRegEventoData {
+  /** Chave de acesso da NFS-e a ser cancelada (50 dígitos). */
   chNFSe: string
-  tipoEvento: number              // Ex: 101101 = Cancelamento
-  numSeqEvento?: number
+  /**
+   * Tipo do evento. Use o enum `TipoEvento`.
+   */
+  tipoEvento: TipoEvento | number
+  /** Ambiente (`tpAmb`): `1` = Produção, `2` = Homologação. Padrão: `1`. */
+  tipoAmbiente?: number
+  /** Data/hora do evento ISO 8601 (padrão: agora com offset BRT -03:00). */
   dhEvento?: string
-  descricao: string
-  motivo?: string
-  motivoDescricao?: string
+  /**
+   * CNPJ do autor do evento (prestador ou intermediário).
+   * Obrigatório quando o autor usa CNPJ (use `cpfAutor` para CPF).
+   */
+  cnpjAutor?: string
+  /** CPF do autor do evento. Use quando o prestador é Pessoa Física. */
+  cpfAutor?: string
+  /** Código do motivo (`cMotivo`). Obrigatório para `TipoEvento.Cancelamento` (e101101). */
+  cMotivo?: MotivoEventoCancelamento
+  /** Descrição estendida do motivo (`xMotivo`). */
+  xMotivo?: string
 }

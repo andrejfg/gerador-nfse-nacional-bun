@@ -3,6 +3,8 @@
  * Migrado de nfse-php/src/Support/IdGenerator.php
  *
  * Formato: DPS + CodMun(7) + TipoInscrição(1) + CPF/CNPJ(14) + Série(5) + Número(15) = 45 chars
+ * Os campos <serie> e <nDPS> no XML usam valores sem padding (validados pelo TSserieDPS/TSNumDPS).
+ * O atributo Id usa sempre os valores com zero-padding (TSIdDPS = DPS[0-9]{42}).
  */
 
 import { onlyDigits } from './cpf-cnpj.js'
@@ -16,7 +18,7 @@ export function generateDpsId(
   numDps: string | number
 ): string {
   const digits = onlyDigits(cpfCnpj)
-  const tipoInscricao: TipoInscricao = digits.length === 14 ? 1 : 2
+  const tipoInscricao: TipoInscricao = digits.length === 14 ? 2 : 1  // 2=CNPJ, 1=CPF
 
   const munCode = codIbge.padStart(7, '0').slice(0, 7)
   const inscricao = digits.padStart(14, '0').slice(0, 14)
@@ -27,13 +29,14 @@ export function generateDpsId(
 }
 
 export function generateNumDps(): string {
-  return Date.now().toString().slice(-15).padStart(15, '0')
+  return Date.now().toString()
 }
 
 export function formatDataCompetencia(date: Date = new Date()): string {
   const y = date.getFullYear()
   const m = String(date.getMonth() + 1).padStart(2, '0')
-  return `${y}-${m}`
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
 }
 
 export function formatDhEmissao(date: Date = new Date(), offsetHours = -3): string {

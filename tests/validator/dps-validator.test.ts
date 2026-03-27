@@ -1,6 +1,7 @@
 /**
  * Testes do DpsValidator
  * Espelhado de nfse-php/tests/Unit/Validator/DpsValidatorTest.php
+ * Atualizado para schema Zod v1.01 (IBSCBS obrigatório, regimeTributario obrigatório, etc.)
  */
 import { describe, test, expect } from 'bun:test'
 import { validateDps } from '../../src/validator/dps-validator.js'
@@ -11,25 +12,33 @@ import type { DpsData } from '../../src/types/dtos.js'
 // Helpers
 // ---------------------------------------------------------------------------
 
+const IBSCBS_BASE = {
+  finNFSe: '0' as const,
+  cIndOp: '100000',
+  indDest: '0' as const,
+  valores: { trib: { gIBSCBS: { CST: '000', cClassTrib: '010100' } } },
+} satisfies DpsData['infDps']['ibsCbs']
+
 function makeDps(overrides: Partial<DpsData['infDps']> = {}): DpsData {
   return {
     infDps: {
-      id: 'DPS31062001531936080001460010100000000000001',
+      // DPS + 3106200(7) + 2(CNPJ) + 12345678000199(14) + 00001(5) + 000000000000100(15) = 45 chars
+      id: 'DPS310620021234567800019900001000000000000100',
       tipoAmbiente: TipoAmbiente.Homologacao,
       dataEmissao: '2023-01-01T00:00:00-03:00',
       numeroDps: '100',
-      dataCompetencia: '2023-01',
+      dataCompetencia: '2023-01-01',
       tipoEmitente: EmitenteDPS.Prestador,
       codigoLocalEmissao: '3106200',
       prestador: {
         cnpj: '12345678000199',
-        inscricaoMunicipal: '12345',
         nome: 'Prestador Teste',
         endereco: { cMun: '3106200', cep: '30100000', xLgr: 'Rua Teste', nro: '100', xBairro: 'Centro' },
+        regimeTributario: { opSimpNac: 1, regEspTrib: 0 },
       },
       servico: {
         localPrestacao: { cLocPrestacao: '3106200' },
-        codigoServico: { cServTribNac: '01.01.00163' },
+        codigoServico: { cServTribNac: '010100' },
         xDescServ: 'Desenvolvimento de software',
       },
       valores: { vServico: 1000 },
@@ -87,7 +96,8 @@ describe('DpsValidator — prestador', () => {
     }
     const result = validateDps(dps)
     expect(result.isValid).toBe(false)
-    expect(result.errors).toContain('Prestador data is required.')
+    // Zod captura a ausência do objeto prestador
+    expect(result.errors.some(e => e.includes('prestador'))).toBe(true)
   })
 
   test('falha quando prestador não é emitente e não tem endereço', () => {
@@ -95,13 +105,15 @@ describe('DpsValidator — prestador', () => {
       tipoEmitente: EmitenteDPS.Tomador, // tpEmit = 2
       prestador: {
         cnpj: '12345678000199',
+        inscricaoMunicipal: '12345',
         nome: 'Prestador Teste',
+        regimeTributario: { opSimpNac: 1, regEspTrib: 0 },
         // sem endereco
       },
     }))
     expect(result.isValid).toBe(false)
     expect(result.errors).toContain(
-      'Endereço do prestador é obrigatório quando o prestador não for o emitente.',
+      'E0129: Endereço do prestador é obrigatório quando o prestador não for o emitente.',
     )
   })
 })
@@ -130,13 +142,12 @@ describe('DpsValidator — tomador', () => {
       tomador: {
         cpf: '12345678901',
         nome: 'Tomador Nacional',
-        endereco: { cMun: '' }, // cMun vazio
+        endereco: { cMun: '' }, // cMun vazio — falha Zod (7 dígitos obrigatórios)
       },
     }))
     expect(result.isValid).toBe(false)
-    expect(result.errors).toContain(
-      'Código do município do tomador é obrigatório para endereço nacional.',
-    )
+    // Zod captura via padrão [0-9]{7} ou business rule captura string vazia
+    expect(result.errors.some(e => e.includes('cMun') || e.includes('município'))).toBe(true)
   })
 
   test('tomador sem identificação não gera erros de endereço', () => {
@@ -165,7 +176,7 @@ describe('DpsValidator — tomador', () => {
       tomador: {
         nif: 'US123456789',
         nome: 'Foreign Corp',
-        endereco: { cMun: '' },
+        endereco: { cMun: '0000000' }, // zeros aceitos pelo regex mas negócio libera para NIF
       },
     }))
     expect(result.isValid).toBe(true)
@@ -183,7 +194,7 @@ describe('DpsValidator — valores', () => {
     }))
     expect(result.isValid).toBe(false)
     expect(result.errors).toContain(
-      'O valor do desconto incondicionado deve ser menor que o valor do serviço.',
+      'Regra 307: O desconto incondicionado deve ser menor que o valor do serviço.',
     )
   })
 
@@ -193,7 +204,7 @@ describe('DpsValidator — valores', () => {
     }))
     expect(result.isValid).toBe(false)
     expect(result.errors).toContain(
-      'O valor do desconto condicionado deve ser menor que o valor do serviço.',
+      'Regra 309: O desconto condicionado deve ser menor que o valor do serviço.',
     )
   })
 
@@ -203,7 +214,7 @@ describe('DpsValidator — valores', () => {
     }))
     expect(result.isValid).toBe(false)
     expect(result.errors).toContain(
-      'O valor do serviço deve ser maior ou igual ao somatório dos valores informados para Desconto Incondicionado e Desconto Condicionado.',
+      'Regra 303: O valor do serviço deve ser maior ou igual ao somatório dos descontos incondicionado e condicionado.',
     )
   })
 })
@@ -229,7 +240,7 @@ describe('DpsValidator — serviço', () => {
       }))
       expect(result.isValid).toBe(false)
       expect(result.errors).toContain(
-        'O grupo de informações de obra é obrigatório para o serviço informado.',
+        'Regra 260: O grupo de informações de obra é obrigatório para o serviço informado.',
       )
     },
   )
@@ -245,7 +256,85 @@ describe('DpsValidator — serviço', () => {
     }))
     expect(result.isValid).toBe(false)
     expect(result.errors).toContain(
-      'O grupo de informações de Atividade/Evento é obrigatório para o serviço informado.',
+      'Regra 276: O grupo de informações de Atividade/Evento é obrigatório para o serviço informado.',
     )
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Zod schema — validação estrutural
+// ---------------------------------------------------------------------------
+
+describe('DpsValidator — validação Zod (XSD v1.01)', () => {
+  test('ibsCbs ausente é válido (campo opcional durante transição IBS/CBS)', () => {
+    const dps: DpsData = { infDps: { ...makeDps().infDps, ibsCbs: undefined } }
+    const result = validateDps(dps)
+    expect(result.isValid).toBe(true)
+  })
+
+  test('falha quando ibsCbs.cIndOp tem formato errado', () => {
+    const result = validateDps(makeDps({
+      ibsCbs: { ...IBSCBS_BASE, cIndOp: '123' }, // deve ter 6 dígitos
+    }))
+    expect(result.isValid).toBe(false)
+    expect(result.errors.some(e => e.includes('cIndOp'))).toBe(true)
+  })
+
+  test('inscricaoMunicipal ausente é válido (campo opcional)', () => {
+    const result = validateDps(makeDps({
+      prestador: {
+        cnpj: '12345678000199',
+        // inscricaoMunicipal omitida — agora opcional
+        regimeTributario: { opSimpNac: 1, regEspTrib: 0 },
+      },
+    }))
+    expect(result.isValid).toBe(true)
+  })
+
+  test('falha quando regimeTributario do prestador está ausente', () => {
+    const result = validateDps(makeDps({
+      prestador: {
+        cnpj: '12345678000199',
+        inscricaoMunicipal: '12345',
+        regimeTributario: undefined as unknown as DpsData['infDps']['prestador']['regimeTributario'],
+      },
+    }))
+    expect(result.isValid).toBe(false)
+    expect(result.errors.some(e => e.includes('regimeTributario'))).toBe(true)
+  })
+
+  test('cServMun ausente é válido (campo opcional)', () => {
+    const result = validateDps(makeDps({
+      servico: {
+        localPrestacao: { cLocPrestacao: '3106200' },
+        codigoServico: { cServTribNac: '010100' },
+        xDescServ: 'Serviço',
+      },
+    }))
+    expect(result.isValid).toBe(true)
+  })
+
+  test('falha quando cServMun tem formato inválido (não são 3 dígitos)', () => {
+    const result = validateDps(makeDps({
+      servico: {
+        localPrestacao: { cLocPrestacao: '3106200' },
+        codigoServico: { cServTribNac: '010100', cServMun: '10' }, // só 2 dígitos — inválido
+        xDescServ: 'Serviço',
+      },
+    }))
+    expect(result.isValid).toBe(false)
+    expect(result.errors.some(e => e.includes('cServMun'))).toBe(true)
+  })
+
+  test('falha quando numeroDps começa com zero', () => {
+    const result = validateDps(makeDps({ numeroDps: '001' }))
+    expect(result.isValid).toBe(false)
+    expect(result.errors.some(e => e.includes('numeroDps') || e.includes('Número do DPS'))).toBe(true)
+  })
+
+  test('falha quando dataCompetencia tem formato inválido', () => {
+    const result = validateDps(makeDps({ dataCompetencia: '2023-01' })) // YYYY-MM sem dia
+    expect(result.isValid).toBe(false)
+    expect(result.errors.some(e => e.includes('dataCompetencia') || e.includes('competência'))).toBe(true)
   })
 })

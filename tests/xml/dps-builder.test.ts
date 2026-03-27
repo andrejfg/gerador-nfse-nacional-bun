@@ -92,15 +92,16 @@ describe('buildDpsXml', () => {
   })
 
   test('valor do serviço com 2 casas decimais', () => {
-    expect(buildDpsXml(makeDps())).toContain('<vServico>1000.00</vServico>')
+    expect(buildDpsXml(makeDps())).toContain('<vServ>1000.00</vServ>')
   })
 
   test('inclui descrição do serviço', () => {
     expect(buildDpsXml(makeDps())).toContain('<xDescServ>Desenvolvimento de software sob encomenda</xDescServ>')
   })
 
-  test('inclui código NBS do serviço', () => {
-    expect(buildDpsXml(makeDps())).toContain('<cServTribNac>01.01.00163</cServTribNac>')
+  test('inclui código de tributação nacional do serviço', () => {
+    // builder remove pontuação: '01.01.00163' → '010100163'; tag é <cTribNac>
+    expect(buildDpsXml(makeDps())).toContain('<cTribNac>010100163</cTribNac>')
   })
 
   test('alíquota convertida de decimal para percentual (0.05 → 5.00)', () => {

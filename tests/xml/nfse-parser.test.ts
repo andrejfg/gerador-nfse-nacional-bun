@@ -66,10 +66,10 @@ const NFSE_XML = `<?xml version="1.0" encoding="UTF-8"?>
             <xPA>Brasil</xPA>
           </locPrest>
           <cServ>
-            <cServTribNac>01.01.00163</cServTribNac>
-            <cServMun>14.01</cServMun>
+            <cTribNac>01.01.00163</cTribNac>
+            <cTribMun>14.01</cTribMun>
+            <xDescServ>Desenvolvimento de software sob encomenda</xDescServ>
           </cServ>
-          <xDescServ>Desenvolvimento de software sob encomenda</xDescServ>
           <xInfComp>Contrato 2024-001</xInfComp>
         </serv>
         <valores>
@@ -178,7 +178,7 @@ describe('parseNfseXml', () => {
 
   test('parseia código de serviço NBS e municipal', () => {
     const serv = parseNfseXml(NFSE_XML).infNFSe?.DPS?.infDPS.serv
-    expect(serv?.cServTribNac).toBe('01.01.00163')
+    expect(serv?.cTribNac).toBe('01.01.00163')
     expect(serv?.cServMun).toBe('14.01')
   })
 
