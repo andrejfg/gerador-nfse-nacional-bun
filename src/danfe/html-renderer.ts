@@ -24,6 +24,8 @@ export interface DanfeOptions {
   fontSize?: number
   templatePath?: string
   logoPath?: string
+  /** Quando true, sobrepõe uma marca d'água "PRÉVIA" no documento renderizado. */
+  isPreview?: boolean
 }
 
 export interface DanfeWarning {
@@ -96,6 +98,34 @@ function fmtDoc(cnpj: string, cpf: string): string {
   return '-'
 }
 
+const PREVIEW_WATERMARK_HTML = `
+<style>
+  .danfe-preview-watermark {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    pointer-events: none; z-index: 9999; overflow: hidden;
+  }
+  .danfe-preview-watermark span {
+    display: block;
+    font-size: 90px; font-weight: 900; letter-spacing: 0.05em;
+    color: rgba(200, 0, 0, 0.13);
+    transform: rotate(-40deg);
+    white-space: nowrap; text-transform: uppercase;
+    font-family: Arial, sans-serif;
+    line-height: 1;
+  }
+  @media print {
+    .danfe-preview-watermark { position: fixed; }
+  }
+</style>
+<div class="danfe-preview-watermark"><span>PRÉVIA — SEM VALOR FISCAL</span></div>`
+
+function injectWatermark(html: string): string {
+  const closeBody = html.lastIndexOf('</body>')
+  if (closeBody !== -1) return html.slice(0, closeBody) + PREVIEW_WATERMARK_HTML + html.slice(closeBody)
+  return html + PREVIEW_WATERMARK_HTML
+}
+
 function applyConditionals(html: string, flags: Record<string, boolean>): string {
   let result = html
   for (const [key, show] of Object.entries(flags)) {
@@ -120,6 +150,8 @@ export async function renderDanfseHtml(
   const emit = inf.emit
   const dps = inf.DPS?.infDPS
   const val = inf.valores
+  // vServico pode não vir em infNFSe.valores — usa DPS como fallback
+  const vServico = val?.vServico || dps?.valores?.vServ || 0
   const toma = dps?.toma
   const interm = dps?.interm
   const serv = dps?.serv
@@ -150,10 +182,10 @@ export async function renderDanfseHtml(
     '{{TOMA_EMAIL}}': h(toma?.email),
     '{{INTERM_CNPJ}}': h(fmtDoc(interm?.CNPJ ?? '', interm?.CPF ?? '')),
     '{{INTERM_XNOME}}': h(interm?.xNome),
-    '{{SERVICO_XNS}}': h(serv?.xNBS ?? inf.xNBS),
-    '{{SERVICO_XCM}}': h(serv?.xCOD),
-    '{{SERVICO_XCLES}}': h(serv?.xCLS),
-    '{{SERVICO_XPA}}': h(serv?.xPA),
+    '{{SERVICO_XNS}}': h(serv?.cNBS || inf.xNBS),        // código NBS (ex: 109102000) ou descrição da NFS-e
+    '{{SERVICO_XCM}}': h(serv?.cServMun),               // código de tributação municipal
+    '{{SERVICO_XCLES}}': h(serv?.cLocPrestacao),         // código IBGE do local de prestação
+    '{{SERVICO_XPA}}': '-',                              // país — não rastreado (serviço nacional)
     '{{SERVICO_DESCRICAO}}': serv?.xDescServ ?? '-',
     '{{ISSQN_TPIMUNICIPAL}}': h(inf.xTribMun ?? inf.xTribNac),
     '{{ISSQN_CMUNICIPIO}}': (() => { const m = getMunicipio(emit?.enderNac?.cMun ?? ''); return m ? h(`${m.nome}/${m.uf}`) : '-' })(),
@@ -168,7 +200,7 @@ export async function renderDanfseHtml(
     '{{PIS_VALUE}}': val ? h(`R$ ${fmt(val.PIS)}`) : '-',
     '{{COFINS_VALUE}}': val ? h(`R$ ${fmt(val.COFINS)}`) : '-',
     '{{FED_TOTAL}}': val ? h(`R$ ${fmt(val.IRRF + val.CP + val.CSLL + val.PIS + val.COFINS)}`) : '-',
-    '{{FINANCEIRO_VSERVICO}}': val ? h(`R$ ${fmt(val.vServico)}`) : '-',
+    '{{FINANCEIRO_VSERVICO}}': h(`R$ ${fmt(vServico)}`),
     '{{FINANCEIRO_VDESCCONDICIONAL}}': val ? h(`R$ ${fmt(val.vDescCondicionado)}`) : '-',
     '{{FINANCEIRO_VDESCONTOINCOND}}': val ? h(`R$ ${fmt(val.vDescIncondicionado)}`) : '-',
     '{{FINANCEIRO_VLIQ}}': val ? h(`R$ ${fmt(val.vLiq)}`) : '-',
@@ -194,6 +226,8 @@ export async function renderDanfseHtml(
     warnings.push({ code: 'PLACEHOLDER_EMPTY', message: `Placeholder não substituído: ${ph}`, field: ph })
     html = html.replaceAll(ph, '-')
   }
+
+  if (options.isPreview) html = injectWatermark(html)
 
   const env = (dps?.tpAmb ?? 1) === 1 ? DanfeEnvironment.Production : DanfeEnvironment.Restricted
   return { html, warnings, environment: env }

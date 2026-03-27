@@ -26,17 +26,17 @@ import {
   decompressXml,
   formatCpf,
   formatCnpj,
-  generateDpsId,
-  generateNumDps,
-  formatDataCompetencia,
+  generateDpsId, formatDataCompetencia,
   formatDhEmissao,
   DanfeService,
+  DanfePreviewFormat,
   TipoAmbiente,
   EmitenteDPS,
   TributacaoIssqn,
   TipoRetencaoIssqn,
-  type DpsData,
-  type NfseContext,
+  OpcaoSimplesNacional,
+  RegimeEspecialTributacao,
+  type DpsData, type InfDpsData
 } from '../../dist/index.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -49,27 +49,31 @@ const XML_EXEMPLO = readFileSync(
 )
 
 // DPS mínimo válido para testes
+// ID = DPS + 3106200(7) + 2(CNPJ) + 12345678000195(14) + 00001(5) + 000000000000001(15) = 45 chars
 const DPS_VALIDO: DpsData = {
   infDps: {
-    id: 'DPS3106200112345678000195001010000000000001',
+    id: 'DPS310620021234567800019500001000000000000001',
     tipoAmbiente: TipoAmbiente.Homologacao,
     dataEmissao: '2024-01-15T10:00:00-03:00',
-    numeroDps: '000001',
+    numeroDps: '1',
     serie: '001',
-    dataCompetencia: '2024-01',
+    dataCompetencia: '2024-01-15',
     tipoEmitente: EmitenteDPS.Prestador,
     codigoLocalEmissao: '3106200',
-    prestador: { cnpj: '12345678000195', nome: 'Empresa Teste' },
+    prestador: {
+      cnpj: '12345678000195',
+      nome: 'Empresa Teste',
+      regimeTributario: { opSimpNac: 1, regEspTrib: 0 },
+    },
     servico: {
       localPrestacao: { cLocPrestacao: '3106200' },
-      codigoServico: { cServTribNac: '01.01.00163' },
+      codigoServico: { cServTribNac: '010100' },
       xDescServ: 'Serviço de teste',
     },
-    valores: { vServico: 1000, vBC: 1000, vISSQN: 50, vLiq: 950 },
+    valores: { vServico: 1000 },
     tributacao: {
       issqn: {
         tributacaoIssqn: TributacaoIssqn.TributadaMunicipioPrestador,
-        aliquota: 0.05,
         tipoRetencaoIssqn: TipoRetencaoIssqn.NaoRetido,
       },
     },
@@ -201,8 +205,8 @@ describe('E2E — utils', () => {
     expect(id).toHaveLength(45)
   })
 
-  test('formatDataCompetencia retorna padrão YYYY-MM', () => {
-    expect(formatDataCompetencia(new Date(2024, 0, 15))).toBe('2024-01')
+  test('formatDataCompetencia retorna padrão YYYY-MM-DD', () => {
+    expect(formatDataCompetencia(new Date(2024, 0, 15))).toBe('2024-01-15')
   })
 
   test('formatDhEmissao retorna ISO 8601 com offset', () => {
@@ -248,4 +252,95 @@ describe('E2E — DanfeService (template + renderização HTML)', () => {
       expect(error.message).not.toContain('ENOENT')
     }
   })
+})
+
+// ---------------------------------------------------------------------------
+
+const DPS_PREVIEW_E2E: InfDpsData = {
+  id: 'DPS310620021234567800019500001000000000000099',
+  tipoAmbiente: TipoAmbiente.Homologacao,
+  dataEmissao: '2024-03-15T10:00:00-03:00',
+  numeroDps: '000000000000099',
+  serie: '001',
+  dataCompetencia: '2024-03-15',
+  tipoEmitente: EmitenteDPS.Prestador,
+  codigoLocalEmissao: '3106200',
+  prestador: {
+    cnpj: '12345678000195',
+    nome: 'Empresa E2E LTDA',
+    telefone: '3133334444',
+    email: 'e2e@empresa.com',
+    endereco: { cMun: '3106200', uf: 'MG', cep: '30130170', xLgr: 'Rua E2E', nro: '1' },
+    regimeTributario: {
+      opSimpNac: OpcaoSimplesNacional.NaoOptante,
+      regEspTrib: RegimeEspecialTributacao.Nenhum,
+    },
+  },
+  tomador: {
+    cnpj: '00000000000191',
+    nome: 'Tomador E2E S/A',
+    endereco: { cMun: '3550308', uf: 'SP', cep: '01310100', xLgr: 'Av E2E', nro: '99' },
+  },
+  servico: {
+    localPrestacao: { cLocPrestacao: '3106200' },
+    codigoServico: { cServTribNac: '010100163', cNBSPrinc: '109102000' },
+    xDescServ: 'Serviço E2E de preview — sprint 99',
+  },
+  valores: { vServico: 2500, vBC: 2500, vISSQN: 125 },
+  tributacao: {
+    issqn: {
+      tributacaoIssqn: TributacaoIssqn.TributadaMunicipioPrestador,
+      tipoRetencaoIssqn: TipoRetencaoIssqn.NaoRetido,
+      aliquota: 0.05,
+    },
+    percentualTotalTributosFederais: 11.33,
+    percentualTotalTributosEstaduais: 0,
+    percentualTotalTributosMunicipais: 2,
+  },
+}
+
+describe('E2E — DanfeService.previewFromDps (dist)', () => {
+  test('DanfePreviewFormat exportado do dist como enum válido', () => {
+    expect(DanfePreviewFormat.Html).toBe('html' as DanfePreviewFormat)
+    expect(DanfePreviewFormat.Pdf).toBe('pdf' as DanfePreviewFormat)
+  })
+
+  test('preview HTML retorna resultado com html e sem pdfBytes', async () => {
+    const danfe = new DanfeService()
+    const result = await danfe.previewFromDps(DPS_PREVIEW_E2E, { format: DanfePreviewFormat.Html })
+    expect(result.html).toContain('<!DOCTYPE html>')
+    expect(result.format).toBe(DanfePreviewFormat.Html)
+    expect(result.pdfBytes).toBeUndefined()
+  })
+
+  test('preview HTML contém marca d\'água "PRÉVIA"', async () => {
+    const danfe = new DanfeService()
+    const { html } = await danfe.previewFromDps(DPS_PREVIEW_E2E, { format: DanfePreviewFormat.Html })
+    expect(html).toContain('PRÉVIA')
+    expect(html).toContain('SEM VALOR FISCAL')
+    expect(html).toContain('danfe-preview-watermark')
+  })
+
+  test('preview HTML contém dados do prestador e tomador', async () => {
+    const danfe = new DanfeService()
+    const { html } = await danfe.previewFromDps(DPS_PREVIEW_E2E, { format: DanfePreviewFormat.Html })
+    expect(html).toContain('Empresa E2E LTDA')
+    expect(html).toContain('Tomador E2E S/A')
+    expect(html).toContain('Serviço E2E de preview')
+  })
+
+  test('preview PDF retorna pdfBytes ou falha com erro de Puppeteer (não de template)', async () => {
+    const danfe = new DanfeService()
+    try {
+      const result = await danfe.previewFromDps(DPS_PREVIEW_E2E, { format: DanfePreviewFormat.Pdf })
+      expect(result.pdfBytes).toBeDefined()
+      expect(result.pdfBytes!.length).toBeGreaterThan(0)
+      expect(result.html).toContain('PRÉVIA')
+    } catch (err) {
+      const error = err as Error
+      expect(error.message).not.toContain('danfe.html')
+      expect(error.message).not.toContain('ENOENT')
+      expect(error.message).not.toContain('buildPreviewSchema')
+    }
+  }, 30_000)
 })

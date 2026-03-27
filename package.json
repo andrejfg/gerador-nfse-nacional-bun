@@ -1,7 +1,7 @@
 {
   "name": "nfse-nacional",
   "version": "0.1.0",
-  "description": "SDK TypeScript/Bun para emissão de NFS-e Nacional (SEFIN) — assinatura, DPS, DANF-Se",
+  "description": "SDK TypeScript para emissão de NFS-e Nacional (SEFIN) — DPS, assinatura XMLDSig, DANF-Se em PDF e preview",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -27,13 +27,18 @@
     "nfse",
     "nfs-e",
     "nfse-nacional",
-    "sefin",
     "nota-fiscal-servico",
+    "sefin",
     "dps",
     "danfse",
+    "danf-se",
     "xml",
+    "xmldsig",
     "certificado-digital",
+    "issqn",
+    "tributacao",
     "typescript",
+    "nodejs",
     "bun"
   ],
   "license": "MIT",
@@ -44,7 +49,7 @@
   "homepage": "https://github.com/andrejfg/gerador-nfse-nacional-bun#readme",
   "scripts": {
     "start": "bun src/index.ts",
-    "example": "bun src/example.ts",
+    "example": "bun examples/run.ts",
     "test": "bun test tests/crypto tests/utils tests/validator tests/xml",
     "test:coverage": "bun test --coverage tests/crypto tests/utils tests/validator tests/xml",
     "test:e2e": "bun test tests/e2e/integration.test.ts",
@@ -58,11 +63,12 @@
     "format": "bunx biome format --write src/ tests/"
   },
   "dependencies": {
-    "xml-crypto": "^6.0.1",
+    "csv-parse": "^5.5.6",
     "fast-xml-parser": "^4.5.0",
-    "qrcode": "^1.5.4",
     "node-forge": "^1.3.1",
-    "csv-parse": "^5.5.6"
+    "qrcode": "^1.5.4",
+    "xml-crypto": "^6.0.1",
+    "zod": "^4.3.6"
   },
   "optionalDependencies": {
     "puppeteer": "^22.0.0"

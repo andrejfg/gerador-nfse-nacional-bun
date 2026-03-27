@@ -1,5 +1,5 @@
 /**
- * Exemplo 3 — Geração de DANF-Se em PDF
+ * Exemplo 4 — Geração de DANF-Se em PDF
  *
  * Recebe o XML da NFS-e (retornado pela API SEFIN após emissão aprovada)
  * e gera o PDF da DANF-Se.
@@ -11,7 +11,7 @@
  *   bun add puppeteer
  *
  * Uso:
- *   bun run examples/3-danfe.ts
+ *   bun run example 2
  */
 
 import { readFileSync, writeFileSync } from 'node:fs'

@@ -3,5 +3,9 @@ dist/
 *.pfx
 *.p12
 .env
+examples/.env
+*.local.ts
 *.pdf
 bun.lockb
+certificados/
+debug/

@@ -20,13 +20,13 @@ describe('generateDpsId', () => {
     expect(generateDpsId(CNPJ, IBGE, SERIE, NUMERO).startsWith('DPS')).toBe(true)
   })
 
-  test('usa tipo 1 (CNPJ) para 14 dígitos', () => {
-    // posição 10 = DPS(3) + CodMun(7)
-    expect(generateDpsId(CNPJ, IBGE, SERIE, NUMERO)[10]).toBe('1')
+  test('usa tipo 2 (CNPJ) para 14 dígitos', () => {
+    // posição 10 = DPS(3) + CodMun(7) — CNPJ = tipo 2
+    expect(generateDpsId(CNPJ, IBGE, SERIE, NUMERO)[10]).toBe('2')
   })
 
-  test('usa tipo 2 (CPF) para 11 dígitos', () => {
-    expect(generateDpsId('12345678901', IBGE, SERIE, NUMERO)[10]).toBe('2')
+  test('usa tipo 1 (CPF) para 11 dígitos', () => {
+    expect(generateDpsId('12345678901', IBGE, SERIE, NUMERO)[10]).toBe('1')
   })
 
   test('aceita CNPJ com pontuação', () => {
@@ -60,16 +60,16 @@ describe('generateNumDps', () => {
 })
 
 describe('formatDataCompetencia', () => {
-  test('formata no padrão YYYY-MM', () => {
-    expect(formatDataCompetencia(new Date('2024-03-15'))).toBe('2024-03')
+  test('formata no padrão YYYY-MM-DD', () => {
+    expect(formatDataCompetencia(new Date('2024-03-15'))).toBe('2024-03-15')
   })
 
   test('usa data atual quando não informada', () => {
-    expect(formatDataCompetencia()).toMatch(/^\d{4}-\d{2}$/)
+    expect(formatDataCompetencia()).toMatch(/^\d{4}-\d{2}-\d{2}$/)
   })
 
   test('mês de janeiro com zero à esquerda', () => {
-    expect(formatDataCompetencia(new Date(2024, 0, 15))).toBe('2024-01')
+    expect(formatDataCompetencia(new Date(2024, 0, 15))).toBe('2024-01-15')
   })
 })
 

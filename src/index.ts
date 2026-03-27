@@ -11,9 +11,10 @@
 export * from './types/index.js'
 
 // Services
-export { ContribuinteService } from './service/contribuinte-service.js'
+export { ContribuinteService, DpsValidationError, NfseNaoEncontradaError, NfseJaCanceladaError } from './service/contribuinte-service.js'
 export { DanfeService } from './danfe/danfe-service.js'
-export type { DanfeResult, DanfeGenerateOptions } from './danfe/danfe-service.js'
+export type { DanfeResult, DanfeGenerateOptions, PreviewOptions, PreviewResult } from './danfe/danfe-service.js'
+export { DanfePreviewFormat } from './danfe/danfe-service.js'
 export type { DanfeWarning, DanfeRenderResult, DanfeOptions } from './danfe/html-renderer.js'
 
 // XML builders
@@ -36,6 +37,17 @@ export { calculateTax } from './utils/tax-calculator.js'
 // Validator
 export { validateDps } from './validator/dps-validator.js'
 export type { ValidationResult } from './validator/dps-validator.js'
+export {
+  DpsSchema,
+  InfDpsSchema,
+  PrestadorSchema,
+  TomadorSchema,
+  ServicoSchema,
+  ValoresSchema,
+  TributacaoSchema,
+  IbsCbsSchema,
+} from './validator/dps-schema.js'
+export type { DpsSchemaInput, DpsSchemaOutput } from './validator/dps-schema.js'
 
 // HTTP client (baixo nível)
 export { SefinClient, NfseApiError } from './http/sefin-client.js'
