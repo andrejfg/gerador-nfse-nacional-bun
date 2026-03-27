@@ -561,7 +561,7 @@ export interface InfDpsData {
  *     dataCompetencia: formatDataCompetencia(new Date()),
  *     tipoEmitente: EmitenteDPS.Prestador,
  *     codigoLocalEmissao: '3106200',
- *     prestador: { cnpj: '53193608000146', inscricaoMunicipal: '12345' },
+ *     prestador: { cnpj: '12345678000195', inscricaoMunicipal: '12345' },
  *     servico: {
  *       localPrestacao: { cLocPrestacao: '3106200' },
  *       codigoServico: { cServTribNac: '01.01.00163', cServMun: '14.01' },

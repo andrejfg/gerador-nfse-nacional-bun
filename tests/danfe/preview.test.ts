@@ -27,7 +27,7 @@ import type { InfDpsData } from '../../src/types/dtos.js'
 // ---------------------------------------------------------------------------
 
 const DPS_COMPLETO: InfDpsData = {
-  id: 'DPS310620025319360800014600001000000000000001',
+  id: 'DPS310620021234567800019500001000000000000001',
   tipoAmbiente: TipoAmbiente.Homologacao,
   dataEmissao: '2024-03-15T10:00:00-03:00',
   numeroDps: '000000000000001',
@@ -37,7 +37,7 @@ const DPS_COMPLETO: InfDpsData = {
   codigoLocalEmissao: '3106200',
 
   prestador: {
-    cnpj: '53193608000146',
+    cnpj: '12345678000195',
     inscricaoMunicipal: '123456',
     nome: 'Empresa Prestadora LTDA',
     telefone: '3133334444',
@@ -106,7 +106,7 @@ const DPS_COMPLETO: InfDpsData = {
 
 /** DPS mínimo — apenas campos obrigatórios, sem tomador nem tributação */
 const DPS_MINIMO: InfDpsData = {
-  id: 'DPS310620025319360800014600001000000000000002',
+  id: 'DPS310620021234567800019500001000000000000002',
   tipoAmbiente: TipoAmbiente.Producao,
   dataEmissao: '2024-03-15T10:00:00-03:00',
   numeroDps: '000000000000002',
@@ -115,7 +115,7 @@ const DPS_MINIMO: InfDpsData = {
   tipoEmitente: EmitenteDPS.Prestador,
   codigoLocalEmissao: '3106200',
   prestador: {
-    cnpj: '53193608000146',
+    cnpj: '12345678000195',
     nome: 'Empresa Mínima LTDA',
   },
   servico: {
@@ -162,7 +162,7 @@ describe('buildPreviewSchema — mapeamento DPS → NfseSchema', () => {
 
   describe('emit (prestador)', () => {
     test('CNPJ do prestador mapeado corretamente', () => {
-      expect(buildPreviewSchema(DPS_COMPLETO).infNFSe?.emit?.CNPJ).toBe('53193608000146')
+      expect(buildPreviewSchema(DPS_COMPLETO).infNFSe?.emit?.CNPJ).toBe('12345678000195')
     })
 
     test('nome do prestador mapeado corretamente', () => {
@@ -323,8 +323,8 @@ describe('DanfeService.previewFromDps — formato HTML', () => {
 
   test('html contém CNPJ do prestador', async () => {
     const { html } = await danfe.previewFromDps(DPS_COMPLETO, { format: DanfePreviewFormat.Html })
-    // CNPJ formatado 53.193.608/0001-46
-    expect(html).toContain('53.193.608/0001-46')
+    // CNPJ formatado 12.345.678/0001-95
+    expect(html).toContain('12.345.678/0001-95')
   })
 
   test('html contém nome do prestador', async () => {

@@ -3,7 +3,7 @@ import { buildPedRegEventoXml } from '../../src/xml/eventos-builder.js'
 import type { PedRegEventoData } from '../../src/types/dtos.js'
 import { MotivoEventoCancelamento } from '../../src/types/enums.js'
 
-const CHAVE = '3124030153193608000146001001000000000000001'
+const CHAVE = '3124030112345678000195001001000000000000001'
 
 function makeEvento(overrides: Partial<PedRegEventoData> = {}): PedRegEventoData {
   return {
@@ -11,7 +11,7 @@ function makeEvento(overrides: Partial<PedRegEventoData> = {}): PedRegEventoData
     tipoEvento: 101101,
     tipoAmbiente: 2,
     dhEvento: '2024-03-15T12:00:00-03:00',
-    cnpjAutor: '53193608000146',
+    cnpjAutor: '12345678000195',
     cMotivo: MotivoEventoCancelamento.ErroNaEmissao,
     xMotivo: 'Erro de emissão',
     ...overrides,
@@ -61,7 +61,7 @@ describe('buildPedRegEventoXml', () => {
   })
 
   test('inclui CNPJAutor quando fornecido', () => {
-    expect(buildPedRegEventoXml(makeEvento())).toContain('<CNPJAutor>53193608000146</CNPJAutor>')
+    expect(buildPedRegEventoXml(makeEvento())).toContain('<CNPJAutor>12345678000195</CNPJAutor>')
   })
 
   test('inclui verAplic', () => {

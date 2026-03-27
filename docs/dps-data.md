@@ -84,7 +84,7 @@ no **Manual de Integração NFS-e Nacional, item 4.1.1**:
 DPS + CodMun(7) + TipoInscrição(1) + CNPJ/CPF(14) + Série(5) + Número(15) = 45 chars
 
 Exemplo:
-DPS 3106200 1 53193608000146 00100 000000000000001
+DPS 3106200 1 12345678000195 00100 000000000000001
     ↑ IBGE  ↑CNPJ            ↑série ↑número
 ```
 

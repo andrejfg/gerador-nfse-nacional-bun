@@ -14,7 +14,7 @@ const FAKE_CERT: CertificateInfo = {
   password: 'fakecert',
 }
 
-const SAMPLE_XML = `<?xml version="1.0" encoding="UTF-8"?><DPS xmlns="http://www.sped.fazenda.gov.br/nfse" versao="1.00"><infDPS Id="DPS31062001531936080001460010100000000000001"><tpAmb>2</tpAmb><CNPJ>53193608000146</CNPJ></infDPS></DPS>`
+const SAMPLE_XML = `<?xml version="1.0" encoding="UTF-8"?><DPS xmlns="http://www.sped.fazenda.gov.br/nfse" versao="1.00"><infDPS Id="DPS31062001123456780001950010100000000000001"><tpAmb>2</tpAmb><CNPJ>12345678000195</CNPJ></infDPS></DPS>`
 
 describe('compressXml', () => {
   test('retorna string não vazia', async () => {

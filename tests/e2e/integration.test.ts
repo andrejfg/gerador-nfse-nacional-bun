@@ -49,10 +49,10 @@ const XML_EXEMPLO = readFileSync(
 )
 
 // DPS mínimo válido para testes
-// ID = DPS + 3106200(7) + 2(CNPJ) + 53193608000146(14) + 00001(5) + 000000000000001(15) = 45 chars
+// ID = DPS + 3106200(7) + 2(CNPJ) + 12345678000195(14) + 00001(5) + 000000000000001(15) = 45 chars
 const DPS_VALIDO: DpsData = {
   infDps: {
-    id: 'DPS310620025319360800014600001000000000000001',
+    id: 'DPS310620021234567800019500001000000000000001',
     tipoAmbiente: TipoAmbiente.Homologacao,
     dataEmissao: '2024-01-15T10:00:00-03:00',
     numeroDps: '1',
@@ -61,7 +61,7 @@ const DPS_VALIDO: DpsData = {
     tipoEmitente: EmitenteDPS.Prestador,
     codigoLocalEmissao: '3106200',
     prestador: {
-      cnpj: '53193608000146',
+      cnpj: '12345678000195',
       nome: 'Empresa Teste',
       regimeTributario: { opSimpNac: 1, regEspTrib: 0 },
     },
@@ -112,7 +112,7 @@ describe('E2E — parseNfseXml', () => {
 
   test('extrai CNPJ preservando zeros à esquerda', () => {
     const nfse = parseNfseXml(XML_EXEMPLO)
-    expect(nfse.infNFSe?.emit?.CNPJ).toBe('53193608000146')
+    expect(nfse.infNFSe?.emit?.CNPJ).toBe('12345678000195')
   })
 })
 
@@ -174,7 +174,7 @@ describe('E2E — buildDpsXml', () => {
     const xml = buildDpsXml(DPS_VALIDO)
     expect(xml).toBeTruthy()
     expect(xml).toContain('<DPS')
-    expect(xml).toContain('53193608000146')
+    expect(xml).toContain('12345678000195')
   })
 })
 
@@ -201,7 +201,7 @@ describe('E2E — utils', () => {
   })
 
   test('generateDpsId retorna string de 45 chars', () => {
-    const id = generateDpsId('53193608000146', '3106200', '001', '000001')
+    const id = generateDpsId('12345678000195', '3106200', '001', '000001')
     expect(id).toHaveLength(45)
   })
 
@@ -257,7 +257,7 @@ describe('E2E — DanfeService (template + renderização HTML)', () => {
 // ---------------------------------------------------------------------------
 
 const DPS_PREVIEW_E2E: InfDpsData = {
-  id: 'DPS310620025319360800014600001000000000000099',
+  id: 'DPS310620021234567800019500001000000000000099',
   tipoAmbiente: TipoAmbiente.Homologacao,
   dataEmissao: '2024-03-15T10:00:00-03:00',
   numeroDps: '000000000000099',
@@ -266,7 +266,7 @@ const DPS_PREVIEW_E2E: InfDpsData = {
   tipoEmitente: EmitenteDPS.Prestador,
   codigoLocalEmissao: '3106200',
   prestador: {
-    cnpj: '53193608000146',
+    cnpj: '12345678000195',
     nome: 'Empresa E2E LTDA',
     telefone: '3133334444',
     email: 'e2e@empresa.com',

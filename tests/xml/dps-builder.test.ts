@@ -13,7 +13,7 @@ function makeDps(overrides: Partial<DpsData['infDps']> = {}): DpsData {
   return {
     versao: '1.00',
     infDps: {
-      id: 'DPS31062001531936080001460010100000000000001',
+      id: 'DPS31062001123456780001950010100000000000001',
       tipoAmbiente: TipoAmbiente.Homologacao,
       dataEmissao: '2024-03-15T12:00:00-03:00',
       versaoAplicativo: '1.00',
@@ -23,7 +23,7 @@ function makeDps(overrides: Partial<DpsData['infDps']> = {}): DpsData {
       tipoEmitente: EmitenteDPS.Prestador,
       codigoLocalEmissao: '3106200',
       prestador: {
-        cnpj: '53193608000146',
+        cnpj: '12345678000195',
         inscricaoMunicipal: '12345678',
         nome: 'Empresa Teste LTDA',
         regimeTributario: { opSimpNac: OpcaoSimplesNacional.Optante },
@@ -68,19 +68,19 @@ describe('buildDpsXml', () => {
   })
 
   test('inclui Id do infDPS', () => {
-    expect(buildDpsXml(makeDps())).toContain('Id="DPS31062001531936080001460010100000000000001"')
+    expect(buildDpsXml(makeDps())).toContain('Id="DPS31062001123456780001950010100000000000001"')
   })
 
   test('inclui CNPJ sem formatação', () => {
-    expect(buildDpsXml(makeDps())).toContain('<CNPJ>53193608000146</CNPJ>')
+    expect(buildDpsXml(makeDps())).toContain('<CNPJ>12345678000195</CNPJ>')
   })
 
   test('remove pontuação do CNPJ automaticamente', () => {
     const dps = makeDps()
-    dps.infDps.prestador.cnpj = '53.193.608/0001-46'
+    dps.infDps.prestador.cnpj = '12.345.678/0001-95'
     const xml = buildDpsXml(dps)
-    expect(xml).toContain('<CNPJ>53193608000146</CNPJ>')
-    expect(xml).not.toContain('53.193.608/0001-46')
+    expect(xml).toContain('<CNPJ>12345678000195</CNPJ>')
+    expect(xml).not.toContain('12.345.678/0001-95')
   })
 
   test('tpAmb=2 para homologação', () => {

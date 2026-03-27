@@ -6,7 +6,7 @@ import {
   formatDhEmissao,
 } from '../../src/utils/id-generator.js'
 
-const CNPJ    = '53193608000146'
+const CNPJ    = '12345678000195'
 const IBGE    = '3106200'
 const SERIE   = '001'
 const NUMERO  = '000000000000001'
@@ -30,7 +30,7 @@ describe('generateDpsId', () => {
   })
 
   test('aceita CNPJ com pontuação', () => {
-    const a = generateDpsId('53.193.608/0001-46', IBGE, SERIE, NUMERO)
+    const a = generateDpsId('12.345.678/0001-95', IBGE, SERIE, NUMERO)
     const b = generateDpsId(CNPJ, IBGE, SERIE, NUMERO)
     expect(a).toBe(b)
   })

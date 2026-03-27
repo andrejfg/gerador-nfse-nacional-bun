@@ -11,7 +11,7 @@ import {
 
 describe('onlyDigits', () => {
   test('remove pontos, barras e traços', () => {
-    expect(onlyDigits('53.193.608/0001-46')).toBe('53193608000146')
+    expect(onlyDigits('12.345.678/0001-95')).toBe('12345678000195')
   })
 
   test('remove parênteses e espaços', () => {
@@ -43,11 +43,11 @@ describe('formatCpf', () => {
 
 describe('formatCnpj', () => {
   test('formata CNPJ corretamente', () => {
-    expect(formatCnpj('53193608000146')).toBe('53.193.608/0001-46')
+    expect(formatCnpj('12345678000195')).toBe('12.345.678/0001-95')
   })
 
   test('aceita CNPJ já formatado', () => {
-    expect(formatCnpj('53.193.608/0001-46')).toBe('53.193.608/0001-46')
+    expect(formatCnpj('12.345.678/0001-95')).toBe('12.345.678/0001-95')
   })
 
   test('CNPJ do Banco do Brasil', () => {
@@ -81,13 +81,13 @@ describe('formatTelefone', () => {
 
 describe('unformat', () => {
   test('remove formatação de CNPJ', () => {
-    expect(unformat('53.193.608/0001-46')).toBe('53193608000146')
+    expect(unformat('12.345.678/0001-95')).toBe('12345678000195')
   })
 })
 
 describe('isCnpj', () => {
   test('retorna true para CNPJ (14 dígitos)', () => {
-    expect(isCnpj('53.193.608/0001-46')).toBe(true)
+    expect(isCnpj('12.345.678/0001-95')).toBe(true)
   })
 
   test('retorna false para CPF (11 dígitos)', () => {

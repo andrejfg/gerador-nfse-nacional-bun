@@ -6,7 +6,7 @@ const NFSE_XML = `<?xml version="1.0" encoding="UTF-8"?>
   <infNFSe Id="NFSe123">
     <cStat>100</cStat>
     <xMotivo>NFS-e autorizada com sucesso</xMotivo>
-    <chNFSe>3124030153193608000146001001000000000000001</chNFSe>
+    <chNFSe>3124030112345678000195001001000000000000001</chNFSe>
     <nNFSe>000001</nNFSe>
     <dhProc>2024-03-15T12:05:00-03:00</dhProc>
     <xLocEmi>Belo Horizonte/MG</xLocEmi>
@@ -20,7 +20,7 @@ const NFSE_XML = `<?xml version="1.0" encoding="UTF-8"?>
     <tpEmis>1</tpEmis>
     <procEmi>1</procEmi>
     <emit>
-      <CNPJ>53193608000146</CNPJ>
+      <CNPJ>12345678000195</CNPJ>
       <IM>12345678</IM>
       <xNome>Empresa Teste LTDA</xNome>
       <xFant>Empresa Teste</xFant>
@@ -128,7 +128,7 @@ describe('parseNfseXml', () => {
 
   test('parseia chave de acesso', () => {
     expect(parseNfseXml(NFSE_XML).infNFSe?.chNFSe)
-      .toBe('3124030153193608000146001001000000000000001')
+      .toBe('3124030112345678000195001001000000000000001')
   })
 
   test('parseia número da NFS-e', () => {
@@ -146,7 +146,7 @@ describe('parseNfseXml', () => {
   })
 
   test('parseia CNPJ do emitente', () => {
-    expect(parseNfseXml(NFSE_XML).infNFSe?.emit?.CNPJ).toBe('53193608000146')
+    expect(parseNfseXml(NFSE_XML).infNFSe?.emit?.CNPJ).toBe('12345678000195')
   })
 
   test('parseia nome do emitente', () => {

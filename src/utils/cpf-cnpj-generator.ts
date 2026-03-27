@@ -44,8 +44,8 @@ export function generateCpf(formatted = false): string {
  *
  * @example
  * ```ts
- * generateCnpj()       // '53193608000146'
- * generateCnpj(true)   // '53.193.608/0001-46'
+ * generateCnpj()       // '12345678000195'
+ * generateCnpj(true)   // '12.345.678/0001-95'
  * ```
  */
 export function generateCnpj(formatted = false): string {

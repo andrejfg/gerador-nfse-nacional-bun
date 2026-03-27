@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <NFSe xmlns="http://www.sped.fazenda.gov.br/nfse" versao="1.00">
-  <infNFSe Id="NFSe31230653193608000146550010000000001000000001">
+  <infNFSe Id="NFSe31230612345678000195550010000000001000000001">
     <cStat>100</cStat>
     <xMotivo>NFS-e emitida com sucesso</xMotivo>
-    <chNFSe>31230653193608000146550010000000001000000001</chNFSe>
+    <chNFSe>31230612345678000195550010000000001000000001</chNFSe>
     <nNFSe>000001</nNFSe>
     <dhProc>2023-06-20T10:30:00-03:00</dhProc>
     <xLocEmi>Belo Horizonte</xLocEmi>
@@ -17,7 +17,7 @@
     <tpEmis>1</tpEmis>
     <procEmi>1</procEmi>
     <emit>
-      <CNPJ>53193608000146</CNPJ>
+      <CNPJ>12345678000195</CNPJ>
       <IM>123456</IM>
       <xNome>Empresa Prestadora LTDA</xNome>
       <xFant>Empresa Prestadora</xFant>
@@ -39,14 +39,14 @@
       </regTrib>
     </emit>
     <DPS>
-      <infDPS Id="DPS31230653193608000146550010000000001000000001" versao="1.00">
+      <infDPS Id="DPS31230612345678000195550010000000001000000001" versao="1.00">
         <tpAmb>2</tpAmb>
         <nDPS>000001</nDPS>
         <serie>001</serie>
         <dhEmi>2023-06-20T10:00:00-03:00</dhEmi>
         <dCompet>2023-06</dCompet>
         <prest>
-          <CNPJ>53193608000146</CNPJ>
+          <CNPJ>12345678000195</CNPJ>
           <IM>123456</IM>
           <xNome>Empresa Prestadora LTDA</xNome>
           <enderNac>
