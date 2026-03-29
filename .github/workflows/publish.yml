@@ -104,6 +104,15 @@ jobs:
       # ----------------------------------------------------------------
       # Publish via Trusted Publisher (OIDC — sem token no Secrets)
       # --provenance gera attestation de build verificável no npm
+      #
+      # Marcando a Release como "Pre-release" no GitHub, este step é
+      # pulado — o CI roda normalmente, mas nada é publicado no npm.
+      # Útil para a primeira publicação manual ou releases internas.
       # ----------------------------------------------------------------
       - name: Publish to npm
+        if: ${{ !github.event.release.prerelease }}
         run: npm publish --provenance --access public
+
+      - name: Skipped (pre-release)
+        if: ${{ github.event.release.prerelease }}
+        run: echo "⏭️  Release marcada como pre-release — publish no npm ignorado."
