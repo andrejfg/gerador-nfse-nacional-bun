@@ -1,11 +1,11 @@
 name: Publish to npm
 
-# Dispara quando uma Release é publicada no GitHub.
-# Fluxo esperado:
-#   1. Criar uma Release no GitHub com tag vX.Y.Z
-#   2. Este workflow verifica se package.json já tem a versão correta.
-#      Se não tiver, atualiza e commita na main automaticamente.
-#   3. Roda CI completo e publica no npm via OIDC.
+# Prefixos de tag aceitos:
+#   vX.Y.Z  → CI completo + publish no npm via OIDC
+#   rcX.Y.Z → CI completo, sem publish  (release candidate)
+#   pX.Y.Z  → CI completo, sem publish  (já publicado manualmente)
+#
+# Qualquer outro formato interrompe o workflow imediatamente.
 #
 # Pré-requisito no npmjs.com:
 #   Pacote → Settings → Publishing → Trusted Publishers
@@ -26,18 +26,37 @@ jobs:
 
     steps:
       # ----------------------------------------------------------------
-      # Valida o formato da tag antes de qualquer outra coisa.
-      # Padrão aceito: vX.Y.Z  (ex: v1.0.0, v0.2.1)
-      # Tags fora do padrão interrompem o workflow imediatamente.
+      # Valida o formato da tag e determina se deve publicar no npm.
+      #   vX.Y.Z  → PUBLISH=true
+      #   rcX.Y.Z → PUBLISH=false  (release candidate)
+      #   pX.Y.Z  → PUBLISH=false  (publicado manualmente)
+      #   outro   → interrompe o workflow
       # ----------------------------------------------------------------
-      - name: Validate tag format
+      - name: Validate tag and set publish flag
         run: |
-          if ! echo "$GITHUB_REF_NAME" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
-            echo "❌ Tag '$GITHUB_REF_NAME' fora do padrão esperado (vX.Y.Z)."
-            echo "   Publish cancelado. Corrija a tag da Release e tente novamente."
+          TAG="$GITHUB_REF_NAME"
+          SEMVER_RE='^[0-9]+\.[0-9]+\.[0-9]+$'
+
+          if echo "$TAG" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "✅ Tag de release: $TAG → npm publish ativado"
+            echo "SHOULD_PUBLISH=true"  >> "$GITHUB_ENV"
+            echo "TAG_VERSION=${TAG#v}" >> "$GITHUB_ENV"
+
+          elif echo "$TAG" | grep -qE '^rc[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "⏭️  Release candidate: $TAG → CI roda, publish ignorado"
+            echo "SHOULD_PUBLISH=false"  >> "$GITHUB_ENV"
+            echo "TAG_VERSION=${TAG#rc}" >> "$GITHUB_ENV"
+
+          elif echo "$TAG" | grep -qE '^p[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "⏭️  Já publicado manualmente: $TAG → CI roda, publish ignorado"
+            echo "SHOULD_PUBLISH=false" >> "$GITHUB_ENV"
+            echo "TAG_VERSION=${TAG#p}" >> "$GITHUB_ENV"
+
+          else
+            echo "❌ Tag '$TAG' fora do padrão esperado."
+            echo "   Use: vX.Y.Z (publish), rcX.Y.Z (release candidate) ou pX.Y.Z (manual)."
             exit 1
           fi
-          echo "✅ Tag válida: $GITHUB_REF_NAME"
 
       - name: Checkout
         uses: actions/checkout@v4
@@ -53,7 +72,6 @@ jobs:
       - name: Sync version from release tag
         run: |
           PKG_VERSION=$(node -p "require('./package.json').version")
-          TAG_VERSION="${GITHUB_REF_NAME#v}"
           echo "package.json: $PKG_VERSION | Release tag: $TAG_VERSION"
           if [ "$PKG_VERSION" != "$TAG_VERSION" ]; then
             echo "⚠️  Versão desatualizada — atualizando package.json para $TAG_VERSION"
@@ -104,15 +122,11 @@ jobs:
       # ----------------------------------------------------------------
       # Publish via Trusted Publisher (OIDC — sem token no Secrets)
       # --provenance gera attestation de build verificável no npm
-      #
-      # Marcando a Release como "Pre-release" no GitHub, este step é
-      # pulado — o CI roda normalmente, mas nada é publicado no npm.
-      # Útil para a primeira publicação manual ou releases internas.
       # ----------------------------------------------------------------
       - name: Publish to npm
-        if: ${{ !github.event.release.prerelease }}
+        if: env.SHOULD_PUBLISH == 'true'
         run: npm publish --provenance --access public
 
-      - name: Skipped (pre-release)
-        if: ${{ github.event.release.prerelease }}
-        run: echo "⏭️  Release marcada como pre-release — publish no npm ignorado."
+      - name: Skipped
+        if: env.SHOULD_PUBLISH == 'false'
+        run: echo "⏭️  Publish ignorado para tag '$GITHUB_REF_NAME'."
