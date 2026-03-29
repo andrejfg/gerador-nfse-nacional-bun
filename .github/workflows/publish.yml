@@ -2,9 +2,10 @@ name: Publish to npm
 
 # Dispara quando uma Release é publicada no GitHub.
 # Fluxo esperado:
-#   1. Bump da versão em package.json + commit na main
-#   2. Criar uma Release no GitHub (tag vX.Y.Z)
-#   3. Este workflow roda automaticamente e publica no npm via OIDC
+#   1. Criar uma Release no GitHub com tag vX.Y.Z
+#   2. Este workflow verifica se package.json já tem a versão correta.
+#      Se não tiver, atualiza e commita na main automaticamente.
+#   3. Roda CI completo e publica no npm via OIDC.
 #
 # Pré-requisito no npmjs.com:
 #   Pacote → Settings → Publishing → Trusted Publishers
@@ -14,10 +15,9 @@ on:
   release:
     types: [published]
 
-# Permissões mínimas necessárias para o Trusted Publisher (OIDC)
 permissions:
-  contents: read
-  id-token: write
+  contents: write  # necessário para commitar o auto-bump na main
+  id-token: write  # necessário para o Trusted Publisher (OIDC)
 
 jobs:
   publish:
@@ -27,21 +27,32 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       # ----------------------------------------------------------------
-      # Valida que a versão do package.json bate com a tag da Release
-      # Ex: tag v0.2.0  →  package.json deve ter "version": "0.2.0"
+      # Verifica a versão do package.json contra a tag da Release.
+      # Se estiver desatualizada, atualiza e commita na main antes de
+      # prosseguir com o build e o publish.
       # ----------------------------------------------------------------
-      - name: Validate version matches release tag
+      - name: Sync version from release tag
         run: |
           PKG_VERSION=$(node -p "require('./package.json').version")
           TAG_VERSION="${GITHUB_REF_NAME#v}"
           echo "package.json: $PKG_VERSION | Release tag: $TAG_VERSION"
           if [ "$PKG_VERSION" != "$TAG_VERSION" ]; then
-            echo "❌ Versão no package.json ($PKG_VERSION) não bate com a tag ($TAG_VERSION)"
-            exit 1
+            echo "⚠️  Versão desatualizada — atualizando package.json para $TAG_VERSION"
+            npm version "$TAG_VERSION" --no-git-tag-version
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add package.json
+            git commit -m "chore: bump version to $TAG_VERSION [skip ci]"
+            git push origin HEAD:main
+            echo "✅ package.json atualizado e commitado na main"
+          else
+            echo "✅ Versão já correta: $PKG_VERSION"
           fi
-          echo "✅ Versões conferem: $PKG_VERSION"
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
