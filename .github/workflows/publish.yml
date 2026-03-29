@@ -1,0 +1,84 @@
+name: Publish to npm
+
+# Dispara quando uma Release é publicada no GitHub.
+# Fluxo esperado:
+#   1. Bump da versão em package.json + commit na main
+#   2. Criar uma Release no GitHub (tag vX.Y.Z)
+#   3. Este workflow roda automaticamente e publica no npm via OIDC
+#
+# Pré-requisito no npmjs.com:
+#   Pacote → Settings → Publishing → Trusted Publishers
+#   Adicionar: owner=andrejfg  repo=gerador-nfse-nacional-bun  workflow=publish.yml
+
+on:
+  release:
+    types: [published]
+
+# Permissões mínimas necessárias para o Trusted Publisher (OIDC)
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    name: Build & Publish
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ----------------------------------------------------------------
+      # Valida que a versão do package.json bate com a tag da Release
+      # Ex: tag v0.2.0  →  package.json deve ter "version": "0.2.0"
+      # ----------------------------------------------------------------
+      - name: Validate version matches release tag
+        run: |
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          echo "package.json: $PKG_VERSION | Release tag: $TAG_VERSION"
+          if [ "$PKG_VERSION" != "$TAG_VERSION" ]; then
+            echo "❌ Versão no package.json ($PKG_VERSION) não bate com a tag ($TAG_VERSION)"
+            exit 1
+          fi
+          echo "✅ Versões conferem: $PKG_VERSION"
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      # Node.js é necessário apenas para o `npm publish`
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      # ----------------------------------------------------------------
+      # Suite completa — mesma do CI — antes de publicar
+      # ----------------------------------------------------------------
+      - name: Lint (Biome)
+        run: bunx biome check --no-errors-on-unmatched src/ tests/
+
+      - name: Typecheck
+        run: bun tsc --noEmit
+
+      - name: Tests
+        run: bun test --coverage tests/crypto tests/utils tests/validator tests/xml
+
+      - name: Build
+        run: bun run build
+
+      - name: E2E Integration Tests
+        run: bun run test:e2e
+
+      # ----------------------------------------------------------------
+      # Publish via Trusted Publisher (OIDC — sem token no Secrets)
+      # --provenance gera attestation de build verificável no npm
+      # ----------------------------------------------------------------
+      - name: Publish to npm
+        run: npm publish --provenance --access public
