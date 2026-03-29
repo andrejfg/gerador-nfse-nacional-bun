@@ -25,6 +25,20 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # ----------------------------------------------------------------
+      # Valida o formato da tag antes de qualquer outra coisa.
+      # Padrão aceito: vX.Y.Z  (ex: v1.0.0, v0.2.1)
+      # Tags fora do padrão interrompem o workflow imediatamente.
+      # ----------------------------------------------------------------
+      - name: Validate tag format
+        run: |
+          if ! echo "$GITHUB_REF_NAME" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "❌ Tag '$GITHUB_REF_NAME' fora do padrão esperado (vX.Y.Z)."
+            echo "   Publish cancelado. Corrija a tag da Release e tente novamente."
+            exit 1
+          fi
+          echo "✅ Tag válida: $GITHUB_REF_NAME"
+
       - name: Checkout
         uses: actions/checkout@v4
         with:
