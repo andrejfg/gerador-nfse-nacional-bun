@@ -1,0 +1,132 @@
+name: Publish to npm
+
+# Prefixos de tag aceitos:
+#   vX.Y.Z  → CI completo + publish no npm via OIDC
+#   rcX.Y.Z → CI completo, sem publish  (release candidate)
+#   pX.Y.Z  → CI completo, sem publish  (já publicado manualmente)
+#
+# Qualquer outro formato interrompe o workflow imediatamente.
+#
+# Pré-requisito no npmjs.com:
+#   Pacote → Settings → Publishing → Trusted Publishers
+#   Adicionar: owner=andrejfg  repo=gerador-nfse-nacional-bun  workflow=publish.yml
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write  # necessário para commitar o auto-bump na main
+  id-token: write  # necessário para o Trusted Publisher (OIDC)
+
+jobs:
+  publish:
+    name: Build & Publish
+    runs-on: ubuntu-latest
+
+    steps:
+      # ----------------------------------------------------------------
+      # Valida o formato da tag e determina se deve publicar no npm.
+      #   vX.Y.Z  → PUBLISH=true
+      #   rcX.Y.Z → PUBLISH=false  (release candidate)
+      #   pX.Y.Z  → PUBLISH=false  (publicado manualmente)
+      #   outro   → interrompe o workflow
+      # ----------------------------------------------------------------
+      - name: Validate tag and set publish flag
+        run: |
+          TAG="$GITHUB_REF_NAME"
+          SEMVER_RE='^[0-9]+\.[0-9]+\.[0-9]+$'
+
+          if echo "$TAG" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "✅ Tag de release: $TAG → npm publish ativado"
+            echo "SHOULD_PUBLISH=true"  >> "$GITHUB_ENV"
+            echo "TAG_VERSION=${TAG#v}" >> "$GITHUB_ENV"
+
+          elif echo "$TAG" | grep -qE '^rc[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "⏭️  Release candidate: $TAG → CI roda, publish ignorado"
+            echo "SHOULD_PUBLISH=false"  >> "$GITHUB_ENV"
+            echo "TAG_VERSION=${TAG#rc}" >> "$GITHUB_ENV"
+
+          elif echo "$TAG" | grep -qE '^p[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "⏭️  Já publicado manualmente: $TAG → CI roda, publish ignorado"
+            echo "SHOULD_PUBLISH=false" >> "$GITHUB_ENV"
+            echo "TAG_VERSION=${TAG#p}" >> "$GITHUB_ENV"
+
+          else
+            echo "❌ Tag '$TAG' fora do padrão esperado."
+            echo "   Use: vX.Y.Z (publish), rcX.Y.Z (release candidate) ou pX.Y.Z (manual)."
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # ----------------------------------------------------------------
+      # Verifica a versão do package.json contra a tag da Release.
+      # Se estiver desatualizada, atualiza e commita na main antes de
+      # prosseguir com o build e o publish.
+      # ----------------------------------------------------------------
+      - name: Sync version from release tag
+        run: |
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          echo "package.json: $PKG_VERSION | Release tag: $TAG_VERSION"
+          if [ "$PKG_VERSION" != "$TAG_VERSION" ]; then
+            echo "⚠️  Versão desatualizada — atualizando package.json para $TAG_VERSION"
+            npm version "$TAG_VERSION" --no-git-tag-version
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add package.json
+            git commit -m "chore: bump version to $TAG_VERSION [skip ci]"
+            git push origin HEAD:main
+            echo "✅ package.json atualizado e commitado na main"
+          else
+            echo "✅ Versão já correta: $PKG_VERSION"
+          fi
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      # Node.js é necessário apenas para o `npm publish`
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      # ----------------------------------------------------------------
+      # Suite completa — mesma do CI — antes de publicar
+      # ----------------------------------------------------------------
+      - name: Lint (Biome)
+        run: bunx biome check --no-errors-on-unmatched src/ tests/
+
+      - name: Typecheck
+        run: bun tsc --noEmit
+
+      - name: Tests
+        run: bun test --coverage tests/crypto tests/utils tests/validator tests/xml
+
+      - name: Build
+        run: bun run build
+
+      - name: E2E Integration Tests
+        run: bun run test:e2e
+
+      # ----------------------------------------------------------------
+      # Publish via Trusted Publisher (OIDC — sem token no Secrets)
+      # --provenance gera attestation de build verificável no npm
+      # ----------------------------------------------------------------
+      - name: Publish to npm
+        if: env.SHOULD_PUBLISH == 'true'
+        run: npm publish --provenance --access public
+
+      - name: Skipped
+        if: env.SHOULD_PUBLISH == 'false'
+        run: echo "⏭️  Publish ignorado para tag '$GITHUB_REF_NAME'."
