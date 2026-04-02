@@ -1,8 +1,12 @@
 /**
  * Cliente HTTP para a API SEFIN Nacional com mTLS
  * Migrado de nfse-php/src/Http/Client/SefinClient.php
+ *
+ * Bun: fetch() com opção não padrão `tls` (certificado de cliente).
+ * Node: Undici não suporta `tls` no RequestInit — usa `https.request`.
  */
 
+import * as https from 'node:https'
 import type { NfseContext } from '../types/context.js'
 import type {
   EmissaoNfseResponse,
@@ -15,16 +19,75 @@ import { decompressXml } from '../crypto/xml-signer.js'
 import { parseNfseXml } from '../xml/nfse-parser.js'
 import { loadCertificate, resolveCertSource } from '../crypto/certificate.js'
 
+function isBunRuntime(): boolean {
+  return typeof process !== 'undefined'
+    && process.versions != null
+    && 'bun' in process.versions
+}
+
 export class SefinClient {
   private baseUrl: string
   private tlsKey: string
   private tlsCert: string
+  private readonly bunMtls: boolean
 
   constructor(private context: NfseContext) {
     this.baseUrl = resolveBaseUrl(context).replace(/\/$/, '')
     const cert = loadCertificate(resolveCertSource(context), context.certificatePassword)
     this.tlsKey = cert.privateKeyPem
     this.tlsCert = cert.certificatePem
+    this.bunMtls = isBunRuntime()
+  }
+
+  /**
+   * Requisição HTTPS com certificado de cliente (mTLS).
+   * Bun e Node divergem na API suportada pelo fetch global.
+   */
+  private async mtlsFetch(
+    urlStr: string,
+    opts: { method: string; headers: Record<string, string>; body?: string },
+  ): Promise<Response> {
+    if (this.bunMtls) {
+      type BunMtlsInit = RequestInit & {
+        tls: { key: string; cert: string; rejectUnauthorized: boolean }
+      }
+      return fetch(urlStr, {
+        method: opts.method,
+        headers: opts.headers,
+        body: opts.body,
+        tls: { key: this.tlsKey, cert: this.tlsCert, rejectUnauthorized: false },
+      } as BunMtlsInit)
+    }
+
+    const u = new URL(urlStr)
+    const port = u.port === '' ? 443 : Number(u.port)
+
+    return await new Promise<Response>((resolve, reject) => {
+      const req = https.request(
+        {
+          hostname: u.hostname,
+          port,
+          path: `${u.pathname}${u.search}`,
+          method: opts.method,
+          headers: opts.headers,
+          key: this.tlsKey,
+          cert: this.tlsCert,
+          rejectUnauthorized: false,
+        },
+        (incoming) => {
+          const chunks: Buffer[] = []
+          incoming.on('data', (chunk: Buffer) => { chunks.push(chunk) })
+          incoming.on('end', () => {
+            const text = Buffer.concat(chunks).toString('utf8')
+            const status = incoming.statusCode ?? 0
+            resolve(new Response(text, { status, statusText: incoming.statusMessage ?? '' }))
+          })
+        },
+      )
+      req.on('error', reject)
+      if (opts.body !== undefined) req.write(opts.body)
+      req.end()
+    })
   }
 
   async emitirNfse(dpsXmlGZipB64: string): Promise<EmissaoNfseResponse> {
@@ -58,11 +121,7 @@ export class SefinClient {
   async verificarDps(idDps: string): Promise<boolean> {
     try {
       const id = idDps.replace(/^DPS/, '')
-      const res = await fetch(`${this.baseUrl}/dps/${id}`, {
-        method: 'HEAD',
-        // @ts-ignore
-        tls: { key: this.tlsKey, cert: this.tlsCert, rejectUnauthorized: false },
-      })
+      const res = await this.mtlsFetch(`${this.baseUrl}/dps/${id}`, { method: 'HEAD', headers: {} })
       return res.ok
     } catch { return false }
   }
@@ -130,22 +189,18 @@ export class SefinClient {
   }
 
   private async post(path: string, body: unknown): Promise<unknown> {
-    const res = await fetch(`${this.baseUrl}${path}`, {
+    const res = await this.mtlsFetch(`${this.baseUrl}${path}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
       body: JSON.stringify(body),
-      // @ts-ignore — Bun tls option for mTLS
-      tls: { key: this.tlsKey, cert: this.tlsCert, rejectUnauthorized: false },
     })
     return this.handleResponse(res)
   }
 
   private async get(path: string): Promise<unknown> {
-    const res = await fetch(`${this.baseUrl}${path}`, {
+    const res = await this.mtlsFetch(`${this.baseUrl}${path}`, {
       method: 'GET',
       headers: { 'Accept': 'application/json' },
-      // @ts-ignore — Bun tls option for mTLS
-      tls: { key: this.tlsKey, cert: this.tlsCert, rejectUnauthorized: false },
     })
     return this.handleResponse(res)
   }

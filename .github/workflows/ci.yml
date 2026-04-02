@@ -53,3 +53,31 @@ jobs:
       # ------------------------------------------------------------------
       - name: E2E Integration Tests
         run: bun run test:e2e
+
+  # SefinClient mTLS via node:https (Node não suporta tls no fetch)
+  node-mtls:
+    name: Node · mTLS SefinClient
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+
+      - name: Build
+        run: bun run build
+
+      - name: mTLS smoke (Node + dist)
+        run: node tests/http/sefin-client-node-mtls.test.mjs

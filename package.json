@@ -53,6 +53,7 @@
     "test": "bun test tests/crypto tests/utils tests/validator tests/xml",
     "test:coverage": "bun test --coverage tests/crypto tests/utils tests/validator tests/xml",
     "test:e2e": "bun test tests/e2e/integration.test.ts",
+    "test:node-mtls": "bun run build && node tests/http/sefin-client-node-mtls.test.mjs",
     "typecheck": "bun tsc --noEmit",
     "build": "bun run build:js && bun run build:types",
     "build:js": "tsup",

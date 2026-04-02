@@ -119,6 +119,9 @@ jobs:
       - name: E2E Integration Tests
         run: bun run test:e2e
 
+      - name: mTLS smoke (Node + dist)
+        run: node tests/http/sefin-client-node-mtls.test.mjs
+
       # ----------------------------------------------------------------
       # Publish via Trusted Publisher (OIDC — sem token no Secrets)
       # --provenance gera attestation de build verificável no npm
