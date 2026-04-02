@@ -126,6 +126,8 @@ jobs:
       - name: Publish to npm
         if: env.SHOULD_PUBLISH == 'true'
         run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ''
 
       - name: Skipped
         if: env.SHOULD_PUBLISH == 'false'
