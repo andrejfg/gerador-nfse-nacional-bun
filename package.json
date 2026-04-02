@@ -1,6 +1,6 @@
 {
   "name": "nfse-nacional",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "SDK TypeScript para emissão de NFS-e Nacional (SEFIN) — DPS, assinatura XMLDSig, DANF-Se em PDF e preview",
   "type": "module",
   "main": "./dist/index.js",
@@ -63,21 +63,24 @@
     "format": "bunx biome format --write src/ tests/"
   },
   "dependencies": {
-    "csv-parse": "^5.5.6",
-    "fast-xml-parser": "^4.5.0",
-    "node-forge": "^1.3.1",
+    "csv-parse": "^6.2.1",
+    "fast-xml-parser": "^5.5.9",
+    "node-forge": "^1.4.0",
     "qrcode": "^1.5.4",
-    "xml-crypto": "^6.0.1",
+    "xml-crypto": "^6.1.2",
     "zod": "^4.3.6"
   },
+  "overrides": {
+    "@xmldom/xmldom": "^0.8.12"
+  },
   "optionalDependencies": {
-    "puppeteer": "^22.0.0"
+    "puppeteer": "^24.40.0"
   },
   "devDependencies": {
-    "@types/qrcode": "^1.5.5",
-    "@types/node-forge": "^1.3.11",
-    "tsup": "^8.4.0",
-    "typescript": "^5.5.0",
-    "bun-types": "latest"
+    "@types/qrcode": "^1.5.6",
+    "@types/node-forge": "^1.3.14",
+    "tsup": "^8.5.1",
+    "typescript": "^6.0.2",
+    "bun-types": "^1.3.11"
   }
 }
