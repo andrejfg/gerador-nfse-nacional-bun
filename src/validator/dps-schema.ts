@@ -24,6 +24,7 @@ const RE_FONE = /^[0-9]{6,20}$/
 const RE_IBSCBS_IND_OP = /^[0-9]{6}$/
 const RE_IBSCBS_CST = /^[0-9]{3}$/
 const RE_IBSCBS_CLASS_TRIB = /^[0-9]{6}$/
+const RE_IBSCBS_CRED_PRES = /^[0-9]{2}$/
 
 // TSData: YYYY-MM-DD
 const RE_DATA = /^(20\d{2})-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/
@@ -95,19 +96,25 @@ export const EnderecoSchema = z.object({
 // Regime tributário (obrigatório no prestador)
 // ---------------------------------------------------------------------------
 
+// TSRegEspTrib: valores discretos 0,1,2,3,4,5,6,9 (7 e 8 não existem)
+const REG_ESP_TRIB_VALUES = new Set([0, 1, 2, 3, 4, 5, 6, 9])
+
 export const RegimeTributarioSchema = z.object({
+  // TSOpSimpNac: 1=Não Optante, 2=MEI, 3=ME/EPP
   opSimpNac: z
     .number()
     .int()
     .min(1)
-    .max(3, { error: 'opSimpNac inválido: 1=Não optante, 2=MEI, 3=ME/EPP' }),
+    .max(3, { error: 'opSimpNac inválido: 1=Não Optante, 2=MEI, 3=ME/EPP' }),
+  // TSRegimeApuracaoSimpNac: 1,2,3
   regApurSN: z.number().int().min(1).max(3).optional(),
+  // TSRegEspTrib: 0,1,2,3,4,5,6,9
   regEspTrib: z
     .number()
     .int()
-    .min(0)
-    .max(9, {
-      error: 'regEspTrib inválido: 0=Nenhum, 1=Cooperativa, 2=Estimativa, 3=Microempresa Municipal, 4=Notário, 5=Autônomo, 6=Soc. Profissionais, 9=Outros',
+    .refine(v => REG_ESP_TRIB_VALUES.has(v), {
+      message:
+        'regEspTrib inválido: 0=Nenhum, 1=Cooperativa, 2=Estimativa, 3=Microempresa Municipal, 4=Notário, 5=Autônomo, 6=Soc. Profissionais, 9=Outros',
     }),
 })
 
@@ -120,7 +127,7 @@ export const PrestadorSchema = z
     cnpj: CnpjSchema.optional(),
     cpf: CpfSchema.optional(),
     nif: z.string().optional(),
-    codigoNaoNif: z.enum(['1', '2']).optional(),
+    codigoNaoNif: z.enum(['0', '1', '2']).optional(),
     caepf: z.string().regex(/^[0-9]{14}$/, 'CAEPF deve ter 14 dígitos').optional(),
     inscricaoMunicipal: z.string().optional(),
     nome: z.string().optional(),
@@ -138,23 +145,35 @@ export const PrestadorSchema = z
 // Tomador / Intermediário (TCInfoPessoa)
 // ---------------------------------------------------------------------------
 
-export const TomadorSchema = z.object({
-  cnpj: CnpjSchema.optional(),
-  cpf: CpfSchema.optional(),
-  nif: z.string().optional(),
-  codigoNaoNif: z.enum(['1', '2']).optional(),
-  inscricaoMunicipal: z.string().optional(),
-  nome: z.string().optional(),
-  endereco: EnderecoSchema.optional(),
-  telefone: z.string().regex(RE_FONE, 'Telefone deve ter entre 6 e 20 dígitos').optional(),
-  email: z.string().optional(),
-})
+// TCInfoPessoa: xNome é obrigatório (sem minOccurs=0 no XSD) e deve ter de 1 a 300 caracteres.
+export const TomadorSchema = z
+  .object({
+    cnpj: CnpjSchema.optional(),
+    cpf: CpfSchema.optional(),
+    nif: z.string().optional(),
+    codigoNaoNif: z.enum(['0', '1', '2']).optional(),
+    inscricaoMunicipal: z.string().optional(),
+    nome: z
+      .string()
+      .min(1, 'Tomador.nome (xNome) é obrigatório')
+      .max(300, 'Tomador.nome (xNome) deve ter no máximo 300 caracteres'),
+    endereco: EnderecoSchema.optional(),
+    telefone: z.string().regex(RE_FONE, 'Telefone deve ter entre 6 e 20 dígitos').optional(),
+    email: z.string().optional(),
+  })
+  .refine(t => t.cnpj || t.cpf || t.nif || t.codigoNaoNif, {
+    message: 'Tomador deve ter pelo menos um identificador: cnpj, cpf, nif ou codigoNaoNif',
+    path: ['cnpj'],
+  })
 
 export const IntermediarioSchema = z.object({
   cnpj: CnpjSchema.optional(),
   cpf: CpfSchema.optional(),
   inscricaoMunicipal: z.string().optional(),
-  nome: z.string().optional(),
+  nome: z
+    .string()
+    .min(1, 'Intermediario.nome (xNome) é obrigatório')
+    .max(300, 'Intermediario.nome (xNome) deve ter no máximo 300 caracteres'),
 })
 
 // ---------------------------------------------------------------------------
@@ -189,13 +208,17 @@ export const ServicoSchema = z.object({
     .min(1, 'Descrição do serviço (xDescServ) não pode ser vazia'),
   obra: z
     .object({
-      cObra: z.string().optional(),
       inscImobFisc: z.string().optional(),
-      art: z.string().optional(),
+      cObra: z.string().optional(),
     })
     .optional(),
   informacaoComplemento: z
-    .object({ xInfComp: z.string().optional() })
+    .object({
+      idDocTec: z.string().optional(),
+      docRef: z.string().optional(),
+      xPed: z.string().optional(),
+      xInfComp: z.string().optional(),
+    })
     .optional(),
 })
 
@@ -225,11 +248,25 @@ export const TributacaoSchema = z
   .object({
     issqn: z
       .object({
-        tributacaoIssqn: z.number().int().min(1).max(7).optional(),
+        // TSTribISSQN: 1=Tributável, 2=Imunidade, 3=Exportação, 4=Não Incidência
+        tributacaoIssqn: z
+          .number()
+          .int()
+          .min(1)
+          .max(4, { error: 'tributacaoIssqn inválido: 1=Tributável, 2=Imunidade, 3=Exportação, 4=Não Incidência' })
+          .optional(),
         aliquota: z.number().min(0).max(1, { error: 'Alíquota ISSQN deve ser decimal entre 0 e 1 (ex: 0.05 = 5%)' }).optional(),
+        // TSTipoRetISSQN: 1=Não retido, 2=Retido pelo Tomador, 3=Retido pelo Intermediário
         tipoRetencaoIssqn: z.number().int().min(1).max(3).optional(),
-        tipoImunidade: z.number().optional(),
-        tipoSuspensao: z.number().optional(),
+        // TSTipoImunidadeISSQN: 0..5
+        tipoImunidade: z
+          .number()
+          .int()
+          .min(0)
+          .max(5, { error: 'tipoImunidade inválido: 0..5 (ver TSTipoImunidadeISSQN)' })
+          .optional(),
+        // TSOpExigSuspensa: 1=Judicial, 2=Administrativo
+        tipoSuspensao: z.number().int().min(1).max(2).optional(),
         numeroProcessoSuspensao: z.string().optional(),
         exigibilidadeISS: z.number().optional(),
         cMunFG: z.string().optional(),
@@ -284,7 +321,12 @@ export const IbsCbsSchema = z.object({
         cClassTrib: z.string().regex(RE_IBSCBS_CLASS_TRIB, {
           message: 'ibsCbs.valores.trib.gIBSCBS.cClassTrib deve ter 6 dígitos (Código de Classificação Tributária)',
         }),
-        cCredPres: z.string().optional(),
+        cCredPres: z
+          .string()
+          .regex(RE_IBSCBS_CRED_PRES, {
+            message: 'ibsCbs.valores.trib.gIBSCBS.cCredPres deve ter 2 dígitos (Código de Crédito Presumido)',
+          })
+          .optional(),
       }),
     }),
   }),

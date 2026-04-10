@@ -228,7 +228,7 @@ const service = new ContribuinteService(context)
 
 try {
   const resultado = await service.cancelar({
-    chNFSe: '31448052231674343000165...',  // chave de acesso (50 dígitos)
+    chNFSe: '<chave-de-acesso-50-digitos>',  // chave de acesso (50 dígitos)
     tipoEvento: TipoEvento.Cancelamento,
     tipoAmbiente: TipoAmbiente.Homologacao,
     cnpjAutor: cnpjPrestador,

@@ -13,6 +13,8 @@ const examples: Record<string, string> = {
   "6": "examples/6-preview-danfe.ts",
   "7": "examples/7-consulta.ts",
   "8": "examples/8-cancelamento.ts",
+  "9": "examples/9-render-xml.ts",
+  "10": "examples/10-extrair-emitir-comparar.ts",
 };
 
 const base = examples[num];
@@ -29,5 +31,6 @@ if (file === local) {
   console.log(`▶ Usando versão local: ${local}\n`);
 }
 
-const proc = Bun.spawn(["bun", file], { stdio: ["inherit", "inherit", "inherit"] });
+const extraArgs = process.argv.slice(3);
+const proc = Bun.spawn(["bun", file, ...extraArgs], { stdio: ["inherit", "inherit", "inherit"] });
 process.exit(await proc.exited);

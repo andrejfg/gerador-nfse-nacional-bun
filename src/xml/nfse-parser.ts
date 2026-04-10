@@ -57,13 +57,16 @@ function rec(v: unknown): Record<string, unknown> | undefined {
 
 function extractNfseSchema(root: Record<string, unknown>): NfseSchema {
   const inf = rec(root?.['infNFSe'] ?? root?.['InfNFSe']) ?? root
+  const id = str(inf?.['@_Id'])
+  // chNFSe pode não existir como elemento — extrair do atributo Id (prefixo "NFS" + 44 dígitos)
+  const chNFSe = str(inf?.['chNFSe']) || (id.startsWith('NFS') ? id.slice(3) : '')
   return {
     versao: str(root?.['@_versao']) || undefined,
     infNFSe: inf ? {
-      id:            str(inf['@_Id']) || undefined,
+      id:            id || undefined,
       cStat:         str(inf['cStat']),
       xMotivo:       str(inf['xMotivo']),
-      chNFSe:        str(inf['chNFSe']),
+      chNFSe,
       nNFSe:         str(inf['nNFSe']),
       nDFSe:         str(inf['nDFSe']),
       dhProc:        str(inf['dhProc']),
@@ -78,9 +81,11 @@ function extractNfseSchema(root: Record<string, unknown>): NfseSchema {
       ambGer:        num(inf['ambGer']),
       tpEmis:        num(inf['tpEmis']),
       procEmi:       num(inf['procEmi']),
+      xOutInf:       str(inf['xOutInf']),
       emit:          extractEmit(rec(inf['emit'])),
       DPS:           extractDps(rec(inf['DPS'])),
       valores:       extractValoresNfse(rec(inf['valores'])),
+      IBSCBS:        extractIBSCBS(rec(inf['IBSCBS'])),
     } : undefined,
   }
 }
@@ -159,9 +164,11 @@ function extractRegTrib(r: Record<string, unknown> | undefined) {
 function extractDps(dps: Record<string, unknown> | undefined): DpsSchema | undefined {
   if (!dps) return undefined
   const infDPS = rec(dps['infDPS']) ?? dps
-  const serv   = rec(infDPS['serv'])
-  const cServ  = serv ? rec(serv['cServ']) : undefined
+  const serv     = rec(infDPS['serv'])
+  const cServ    = serv ? rec(serv['cServ']) : undefined
   const locPrest = serv ? rec(serv['locPrest']) : undefined
+  const infoCompl = serv ? rec(serv['infoCompl']) : undefined
+  const substRaw = rec(infDPS['subst'])
 
   return {
     infDPS: {
@@ -173,18 +180,26 @@ function extractDps(dps: Record<string, unknown> | undefined): DpsSchema | undef
       dCompet:  str(infDPS['dCompet']),
       tpEmit:   num(infDPS['tpEmit']),
       cLocEmi:  str(infDPS['cLocEmi']),
+      subst: substRaw ? {
+        chSubstda: str(substRaw['chSubstda']),
+        cMotivo:   str(substRaw['cMotivo']),
+        xMotivo:   str(substRaw['xMotivo']),
+      } : undefined,
       prest:    extractEmit(rec(infDPS['prest'])),
       toma:     extractTomador(rec(infDPS['toma'])),
       interm:   extractTomador(rec(infDPS['interm'])),
       serv: serv ? {
-        // xDescServ e cTribNac ficam dentro de <cServ>, não diretamente em <serv>
         xDescServ:    str(cServ?.['xDescServ']),
         cTribNac:     str(cServ?.['cTribNac']),
         cServMun:     str(cServ?.['cTribMun']),
         cNBS:         str(cServ?.['cNBS']),
         cIntContrib:  str(cServ?.['cIntContrib']),
         cLocPrestacao: str(locPrest?.['cLocPrestacao']),
-        xInfComp:     str(serv['xInfComp']),
+        // xInfComp pode estar em serv.infoCompl.xInfComp ou direto em serv.xInfComp (compat)
+        xInfComp:     str(infoCompl?.['xInfComp'] ?? serv['xInfComp']),
+        idDocTec:     str(infoCompl?.['idDocTec']),
+        docRef:       str(infoCompl?.['docRef']),
+        xPed:         str(infoCompl?.['xPed']),
       } : undefined,
       valores: extractValoresDps(rec(infDPS['valores'])),
     },
@@ -223,18 +238,80 @@ function extractValoresNfse(val: Record<string, unknown> | undefined): ValoresNf
  */
 function extractValoresDps(val: Record<string, unknown> | undefined): ValoresDpsSchema | undefined {
   if (!val) return undefined
-  const vServPrest = rec(val['vServPrest'])
+  const vServPrest      = rec(val['vServPrest'])
+  const vDescCondIncond = rec(val['vDescCondIncond'])
+  const vDedRedRaw      = rec(val['vDedRed'])
   const trib       = rec(val['trib'])
   const tribMun    = trib ? rec(trib['tribMun']) : undefined
+  const tribFed    = trib ? rec(trib['tribFed']) : undefined
+  const piscofins  = tribFed ? rec(tribFed['piscofins']) : undefined
   const totTrib    = trib ? rec(trib['totTrib']) : undefined
   const pTotTrib   = totTrib ? rec(totTrib['pTotTrib']) : undefined
+  const exigSusp = tribMun ? rec(tribMun['exigSusp']) : undefined
+  const bm       = tribMun ? rec(tribMun['BM']) : undefined
   return {
+    vReceb:        num(vServPrest?.['vReceb']),
     vServ:         num(vServPrest?.['vServ']),
+    vDescIncond:   num(vDescCondIncond?.['vDescIncond']),
+    vDescCond:     num(vDescCondIncond?.['vDescCond']),
+    pDR:           num(vDedRedRaw?.['pDR']),
+    vDR:           num(vDedRedRaw?.['vDR']),
     tribISSQN:     str(tribMun?.['tribISSQN']),
+    cPaisResult:   str(tribMun?.['cPaisResult']),
+    tpImunidade:   str(tribMun?.['tpImunidade']),
+    tpSusp:        str(exigSusp?.['tpSusp']),
+    nProcesso:     str(exigSusp?.['nProcesso']),
+    nBM:           str(bm?.['nBM']),
+    vRedBCBM:      num(bm?.['vRedBCBM']),
+    pRedBCBM:      num(bm?.['pRedBCBM']),
     tpRetISSQN:    str(tribMun?.['tpRetISSQN']),
+    pAliq:         str(tribMun?.['pAliq']),
+    vRetCP:        num(tribFed?.['vRetCP']),
+    vRetIRRF:      num(tribFed?.['vRetIRRF']),
+    vRetCSLL:      num(tribFed?.['vRetCSLL']),
+    cstPisCofins:  str(piscofins?.['CST']),
+    vBCPisCofins:  num(piscofins?.['vBCPisCofins']),
+    pAliqPis:      num(piscofins?.['pAliqPis']),
+    pAliqCofins:   num(piscofins?.['pAliqCofins']),
+    vPis:          num(piscofins?.['vPis']),
+    vCofins:       num(piscofins?.['vCofins']),
+    tpRetPisCofins: str(piscofins?.['tpRetPisCofins']),
     pTotTribFed:   num(pTotTrib?.['pTotTribFed']),
     pTotTribEst:   num(pTotTrib?.['pTotTribEst']),
     pTotTribMun:   num(pTotTrib?.['pTotTribMun']),
+  }
+}
+
+/**
+ * IBSCBS — bloco de retorno NFS-e com valores calculados de IBS/CBS
+ */
+function extractIBSCBS(ibscbs: Record<string, unknown> | undefined): IBSCBSSchema | undefined {
+  if (!ibscbs) return undefined
+  const valores  = rec(ibscbs['valores'])
+  const uf       = valores ? rec(valores['uf']) : undefined
+  const mun      = valores ? rec(valores['mun']) : undefined
+  const fed      = valores ? rec(valores['fed']) : undefined
+  const totCIBS  = rec(ibscbs['totCIBS'])
+  const gIBS     = totCIBS ? rec(totCIBS['gIBS']) : undefined
+  const gCBS     = totCIBS ? rec(totCIBS['gCBS']) : undefined
+  const gIBSUF   = gIBS ? rec(gIBS['gIBSUFTot']) : undefined
+  const gIBSMun  = gIBS ? rec(gIBS['gIBSMunTot']) : undefined
+  return {
+    cLocalidadeIncid: str(ibscbs['cLocalidadeIncid']),
+    xLocalidadeIncid: str(ibscbs['xLocalidadeIncid']),
+    pRedutor:         num(ibscbs['pRedutor']),
+    vBC:              num(valores?.['vBC']),
+    pIBSUF:           num(uf?.['pIBSUF']),
+    pAliqEfetUF:      num(uf?.['pAliqEfetUF']),
+    pIBSMun:          num(mun?.['pIBSMun']),
+    pAliqEfetMun:     num(mun?.['pAliqEfetMun']),
+    pCBS:             num(fed?.['pCBS']),
+    pAliqEfetCBS:     num(fed?.['pAliqEfetCBS']),
+    vIBSTot:          num(gIBS?.['vIBSTot']),
+    vIBSUF:           num(gIBSUF?.['vIBSUF']),
+    vIBSMun:          num(gIBSMun?.['vIBSMun']),
+    vCBS:             num(gCBS?.['vCBS']),
+    vTotNF:           num(totCIBS?.['vTotNF']),
   }
 }
 
@@ -269,10 +346,14 @@ export interface InfNFSeSchema {
   ambGer: number
   tpEmis: number
   procEmi: number
+  /** Uso da Administração Tributária Municipal */
+  xOutInf: string
   emit?: EmitSchema
   DPS?: DpsSchema
   /** Valores calculados pela SEFIN (alíquota aplicada, ISSQN, base de cálculo) */
   valores?: ValoresNfseSchema
+  /** Bloco IBS/CBS calculado pela SEFIN (reforma tributária) */
+  IBSCBS?: IBSCBSSchema
 }
 
 export interface EmitSchema {
@@ -320,6 +401,7 @@ export interface DpsSchema {
     dCompet: string
     tpEmit: number
     cLocEmi: string
+    subst?: { chSubstda: string; cMotivo: string; xMotivo: string }
     prest?: EmitSchema
     toma?: TomadorSchema
     interm?: TomadorSchema
@@ -331,6 +413,9 @@ export interface DpsSchema {
       cIntContrib: string
       cLocPrestacao: string
       xInfComp: string
+      idDocTec: string
+      docRef: string
+      xPed: string
     }
     valores?: ValoresDpsSchema
   }
@@ -356,10 +441,53 @@ export interface ValoresNfseSchema {
 }
 
 export interface ValoresDpsSchema {
+  vReceb: number
   vServ: number
+  vDescIncond: number
+  vDescCond: number
+  /** Percentual de dedução/redução */
+  pDR: number
+  /** Valor monetário de dedução/redução */
+  vDR: number
   tribISSQN: string
+  cPaisResult: string
+  tpImunidade: string
+  tpSusp: string
+  nProcesso: string
+  nBM: string
+  vRedBCBM: number
+  pRedBCBM: number
   tpRetISSQN: string
+  pAliq: string
+  vRetCP: number
+  vRetIRRF: number
+  vRetCSLL: number
+  cstPisCofins: string
+  vBCPisCofins: number
+  pAliqPis: number
+  pAliqCofins: number
+  vPis: number
+  vCofins: number
+  tpRetPisCofins: string
   pTotTribFed: number
   pTotTribEst: number
   pTotTribMun: number
+}
+
+export interface IBSCBSSchema {
+  cLocalidadeIncid: string
+  xLocalidadeIncid: string
+  pRedutor: number
+  vBC: number
+  pIBSUF: number
+  pAliqEfetUF: number
+  pIBSMun: number
+  pAliqEfetMun: number
+  pCBS: number
+  pAliqEfetCBS: number
+  vIBSTot: number
+  vIBSUF: number
+  vIBSMun: number
+  vCBS: number
+  vTotNF: number
 }
