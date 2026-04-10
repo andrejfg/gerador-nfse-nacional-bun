@@ -75,10 +75,12 @@
       <div class="label">Chave de Acesso</div>
       <div class="chave-value">{{CHAVE_NFSE}}</div>
       <div class="chave-meta">
-        <div><div class="label">Número</div><div><strong>{{NFSE_NUMERO}}</strong></div></div>
+        <div><div class="label">Número NFS-e</div><div><strong>{{NFSE_NUMERO}}</strong></div></div>
+        <div><div class="label">Nº DFSe</div><div>{{NFSE_NDFSE}}</div></div>
         <div><div class="label">Competência</div><div>{{NFSE_COMPETENCIA}}</div></div>
-        <div><div class="label">Emissão</div><div>{{NFSE_DH_EMI}}</div></div>
+        <div><div class="label">Emissão DPS</div><div>{{NFSE_DH_EMI}}</div></div>
         <div><div class="label">Processamento</div><div>{{NFSE_DH_PROC}}</div></div>
+        <div><div class="label">DPS Nº / Série</div><div>{{DPS_NUMERO}} / {{DPS_SERIE}}</div></div>
       </div>
     </div>
   </div>
@@ -86,11 +88,13 @@
   <div class="section">
     <div class="section-title">Prestador do Serviço (Emitente)</div>
     <div class="section-body">
-      <div class="fields fields-3">
+      <div class="fields fields-4">
         <div class="field"><div class="label">CNPJ/CPF</div><div class="value">{{PREST_CNPJ}}</div></div>
         <div class="field"><div class="label">Inscrição Municipal</div><div class="value">{{PREST_IM}}</div></div>
-        <div class="field"><div class="label">Regime Tributário</div><div class="value">{{PREST_REGIME}}</div></div>
+        <div class="field"><div class="label">Simples Nacional</div><div class="value">{{PREST_SIMPNAC}}</div></div>
+        <div class="field"><div class="label">Regime Especial</div><div class="value">{{PREST_REGIME}}</div></div>
         <div class="field field-full"><div class="label">Razão Social / Nome</div><div class="value" style="font-weight:bold;font-size:10pt;">{{PREST_XNOME}}</div></div>
+        <div class="field field-full"><div class="label">Nome Fantasia</div><div class="value">{{PREST_XFANT}}</div></div>
         <div class="field field-full"><div class="label">Endereço</div><div class="value">{{PREST_ENDERECO}}</div></div>
         <div class="field"><div class="label">Telefone</div><div class="value">{{PREST_FONE}}</div></div>
         <div class="field"><div class="label">E-mail</div><div class="value">{{PREST_EMAIL}}</div></div>
@@ -126,6 +130,19 @@
   </div>
   {{INTERMEDIARIO_IDENTIFIED:END}}
 
+  {{SUBSTITUICAO_IDENTIFIED:BEGIN}}
+  <div class="section">
+    <div class="section-title">Substituição de NFS-e</div>
+    <div class="section-body">
+      <div class="fields fields-3">
+        <div class="field field-full"><div class="label">Chave NFS-e Substituída</div><div class="value" style="font-family:'Courier New',monospace;font-size:7.5pt;letter-spacing:1px;">{{SUBST_CHAVE}}</div></div>
+        <div class="field"><div class="label">Código Motivo</div><div class="value">{{SUBST_CMOTIVO}}</div></div>
+        <div class="field field-full"><div class="label">Descrição do Motivo</div><div class="value">{{SUBST_XMOTIVO}}</div></div>
+      </div>
+    </div>
+  </div>
+  {{SUBSTITUICAO_IDENTIFIED:END}}
+
   <div class="section">
     <div class="section-title">Descrição do Serviço</div>
     <div class="section-body">
@@ -145,13 +162,17 @@
   <div class="section">
     <div class="section-title">Tributação Municipal – ISSQN</div>
     <div class="section-body">
+      <div class="fields fields-4" style="margin-bottom:2mm;">
+        <div class="field"><div class="label">Tributação ISSQN</div><div class="value">{{ISSQN_TPIMUNICIPAL}}</div></div>
+        <div class="field"><div class="label">Município Incidência</div><div class="value">{{ISSQN_CMUNICIPIO}}</div></div>
+        <div class="field"><div class="label">Retenção ISSQN</div><div class="value">{{ISSQN_RET}}</div></div>
+        <div class="field"><div class="label">Benefício Municipal</div><div class="value">{{ISSQN_NBM}}</div></div>
+      </div>
       <table class="trib">
         <thead><tr>
-          <th class="left">Tipo Tributação</th><th class="left">Município FG</th>
           <th>Base Cálculo</th><th>Alíquota</th><th>ISSQN Calculado</th><th>Total Retido</th><th>Valor Líquido</th>
         </tr></thead>
         <tbody><tr>
-          <td class="left">{{ISSQN_TPIMUNICIPAL}}</td><td class="left">{{ISSQN_CMUNICIPIO}}</td>
           <td>{{ISSQN_VBASE}}</td><td>{{ISSQN_PALIQ}}</td><td>{{ISSQN_VCALCBM}}</td><td>{{ISSQN_VTOTALRET}}</td><td>{{ISSQN_VLIQ}}</td>
         </tr></tbody>
       </table>
@@ -162,14 +183,30 @@
     <div class="section-title">Retenções Federais</div>
     <div class="section-body">
       <table class="trib">
-        <thead><tr><th>IRRF</th><th>Contrib. Patronal</th><th>CSLL</th><th>PIS</th><th>COFINS</th><th>Total Federal</th></tr></thead>
+        <thead><tr><th>IRRF</th><th>Contrib. Patronal</th><th>Contribuições Sociais Retidas</th><th>Total Federal</th></tr></thead>
         <tbody><tr>
-          <td>{{IRRF_VALUE}}</td><td>{{CP_VALUE}}</td><td>{{CSLL_VALUE}}</td>
-          <td>{{PIS_VALUE}}</td><td>{{COFINS_VALUE}}</td><td><strong>{{FED_TOTAL}}</strong></td>
+          <td>{{IRRF_VALUE}}</td><td>{{CP_VALUE}}</td><td>{{CONTRIB_SOCIAIS}}</td><td><strong>{{FED_TOTAL}}</strong></td>
         </tr></tbody>
       </table>
     </div>
   </div>
+
+  {{IBSCBS_IDENTIFIED:BEGIN}}
+  <div class="section">
+    <div class="section-title">IBS / CBS (Reforma Tributária)</div>
+    <div class="section-body">
+      <table class="trib">
+        <thead><tr><th>Base Cálculo</th><th>Alíq. IBS UF</th><th>IBS UF</th><th>Alíq. IBS Mun</th><th>IBS Mun</th><th>Alíq. CBS</th><th>CBS</th><th>IBS Total</th><th>Total NF</th></tr></thead>
+        <tbody><tr>
+          <td>{{IBSCBS_VBC}}</td><td>{{IBSCBS_PIBSUF}}</td><td>{{IBSCBS_VIBSUF}}</td>
+          <td>{{IBSCBS_PIBSMUN}}</td><td>{{IBSCBS_VIBSMUN}}</td>
+          <td>{{IBSCBS_PCBS}}</td><td>{{IBSCBS_VCBS}}</td>
+          <td>{{IBSCBS_VIBSTOT}}</td><td><strong>{{IBSCBS_VTOTNF}}</strong></td>
+        </tr></tbody>
+      </table>
+    </div>
+  </div>
+  {{IBSCBS_IDENTIFIED:END}}
 
   <div class="section">
     <div class="section-title">Resumo Financeiro</div>
@@ -178,6 +215,7 @@
         <div class="field"><div class="label">Valor Bruto</div><div class="value">{{FINANCEIRO_VSERVICO}}</div></div>
         <div class="field"><div class="label">Desc. Condicionado</div><div class="value">{{FINANCEIRO_VDESCCONDICIONAL}}</div></div>
         <div class="field"><div class="label">Desc. Incondicionado</div><div class="value">{{FINANCEIRO_VDESCONTOINCOND}}</div></div>
+        <div class="field"><div class="label">Dedução/Redução</div><div class="value">{{FINANCEIRO_VDEDUCAO}}</div></div>
       </div>
       <div class="total-box">
         <div class="total-label">Valor Total da NFS-e (Líquido)</div>
@@ -188,7 +226,21 @@
 
   <div class="section">
     <div class="section-title">Informações Complementares</div>
-    <div class="section-body" style="min-height:10mm;font-size:8pt;">{{COMPLEMENTO_XINFADINAL}}</div>
+    <div class="section-body" style="min-height:10mm;font-size:8pt;">
+      <div class="fields fields-3" style="margin-bottom:2mm;">
+        <div class="field"><div class="label">Doc. Técnico</div><div class="value">{{COMPLEMENTO_IDDOCTEC}}</div></div>
+        <div class="field"><div class="label">Doc. Referência</div><div class="value">{{COMPLEMENTO_DOCREF}}</div></div>
+        <div class="field"><div class="label">Pedido</div><div class="value">{{COMPLEMENTO_XPED}}</div></div>
+      </div>
+      <div class="field field-full">
+        <div class="label">Informações Adicionais</div>
+        <div class="value" style="margin-top:1mm;padding:2mm;background:#f9f9f9;border:1px solid #ddd;min-height:8mm;">{{COMPLEMENTO_XINFADINAL}}</div>
+      </div>
+      <div class="field field-full" style="margin-top:1mm;">
+        <div class="label">Informações da Administração Tributária Municipal</div>
+        <div class="value" style="margin-top:1mm;padding:2mm;background:#f9f9f9;border:1px solid #ddd;min-height:4mm;">{{COMPLEMENTO_XOUTINF}}</div>
+      </div>
+    </div>
   </div>
 
   <div class="footer">

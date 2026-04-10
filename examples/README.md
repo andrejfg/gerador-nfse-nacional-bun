@@ -99,6 +99,8 @@ bun run examples/1-homologacao.local.ts
 | 6 | [`6-preview-danfe.ts`](./6-preview-danfe.ts) | Preview da DANF-Se (HTML ou PDF) com marca d'água — sem enviar para a SEFIN |
 | 7 | [`7-consulta.ts`](./7-consulta.ts) | Consulta de NFS-e pela chave de acesso (emite ou usa chave existente) |
 | 8 | [`8-cancelamento.ts`](./8-cancelamento.ts) | Cancelamento de NFS-e (emite ou usa chave existente e cancela) |
+| 9 | [`9-render-xml.ts`](./9-render-xml.ts) | Renderiza a DANF-Se em HTML a partir de um XML já existente (NFS-e completa ou DPS avulso como prévia) |
+| 10 | [`10-extrair-emitir-comparar.ts`](./10-extrair-emitir-comparar.ts) | Round-trip: extrai DPS de um XML, revalida, reemite via `buildDpsXml` e compara com o original |
 
 ---
 
@@ -138,6 +140,16 @@ bun run example 7
 bun run example 8
 # Para cancelar uma nota já existente sem emitir, defina no .env:
 #   CHAVE_NFSE_EXISTENTE=<44 dígitos>
+
+# Exemplo 9 — Renderiza DANF-Se de um XML existente
+bun run example 9 caminho/para/arquivo.xml
+# Detecta automaticamente NFS-e completa vs DPS avulso (este último vira prévia)
+
+# Exemplo 10 — Round-trip: extrai DPS, reemite e compara com o original
+bun run example 10                                     # XML padrão em examples/
+bun run example 10 caminho/para/arquivo.xml            # XML específico
+# Gera examples/compare-<nome>.report.md com o DpsData em JSON,
+# os XMLs original/reemitido indentados e a primeira divergência (se houver).
 ```
 
 ---

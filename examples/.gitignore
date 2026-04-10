@@ -1,0 +1,4 @@
+*.xml
+!nfse-exemplo.xml
+*.html
+*.report.md

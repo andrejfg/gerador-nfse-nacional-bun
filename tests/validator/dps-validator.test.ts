@@ -150,14 +150,15 @@ describe('DpsValidator — tomador', () => {
     expect(result.errors.some(e => e.includes('cMun') || e.includes('município'))).toBe(true)
   })
 
-  test('tomador sem identificação não gera erros de endereço', () => {
+  test('tomador sem identificação falha — XSD exige um de cnpj/cpf/nif/codigoNaoNif', () => {
     const result = validateDps(makeDps({
       tomador: {
         nome: 'Tomador Anônimo',
-        // sem cpf, cnpj ou nif
+        // sem cpf, cnpj, nif ou codigoNaoNif — viola o <xs:choice> de TCInfoPessoa
       },
     }))
-    expect(result.isValid).toBe(true)
+    expect(result.isValid).toBe(false)
+    expect(result.errors.some(e => e.includes('identificador') || e.toLowerCase().includes('cnpj'))).toBe(true)
   })
 
   test('tomador estrangeiro com NIF e cMun preenchido é válido', () => {

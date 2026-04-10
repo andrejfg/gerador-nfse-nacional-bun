@@ -56,7 +56,7 @@ export interface EnderecoData {
 export interface RegimeTributarioData {
   /** Opção pelo Simples Nacional (`opSimpNac`): `1` = Não optante, `2` = Optante. */
   opSimpNac: OpcaoSimplesNacional
-  /** Regime de apuração no Simples Nacional (`regApurSN`): `1` = Competência, `2` = Caixa. */
+  /** Regime de apuração no Simples Nacional (XML: `regApTribSN`): `1` = Competência, `2` = Caixa. */
   regApurSN?: number
   /** Regime especial de tributação municipal (`regEspTrib`). */
   regEspTrib?: RegimeEspecialTributacao
@@ -111,8 +111,8 @@ export interface TomadorData {
   codigoNaoNif?: string
   /** Inscrição Municipal do tomador (`IM`). */
   inscricaoMunicipal?: string
-  /** Razão social ou nome do tomador (`xNome`). */
-  nome?: string
+  /** Razão social ou nome do tomador (`xNome`). Obrigatório pelo XSD (TCInfoPessoa). */
+  nome: string
   /** Endereço do tomador (`enderNac`). */
   endereco?: EnderecoData
   /** Telefone somente dígitos (`fone`). */
@@ -138,8 +138,8 @@ export interface IntermediarioData {
   cpf?: string
   /** Inscrição Municipal do intermediário (`IM`). */
   inscricaoMunicipal?: string
-  /** Razão social ou nome do intermediário (`xNome`). */
-  nome?: string
+  /** Razão social ou nome do intermediário (`xNome`). Obrigatório pelo XSD (TCInfoPessoa). */
+  nome: string
 }
 
 // ---------------------------------------------------------------------------
@@ -196,6 +196,12 @@ export interface CodigoServicoData {
 
 /** Informações complementares do serviço prestado. */
 export interface InformacaoComplementarData {
+  /** Identificador de Documento de Responsabilidade Técnica: ART, RRT, DRT (`idDocTec`). */
+  idDocTec?: string
+  /** Número de documento de referência emitido pelo prestador (`docRef`). */
+  docRef?: string
+  /** Número do pedido/ordem de compra/ordem de serviço (`xPed`). */
+  xPed?: string
   /** Descrição complementar livre (`xInfComp`), até 2.000 caracteres. */
   xInfComp?: string
 }
@@ -203,14 +209,13 @@ export interface InformacaoComplementarData {
 /**
  * Dados de obra de construção civil (`obra` no XML).
  * Obrigatório para serviços de construção civil com código de serviço que exija ART.
+ * Para informar o número da ART/RRT/DRT, use `informacaoComplemento.idDocTec`.
  */
 export interface ObraData {
-  /** Código da obra (`cObra`), conforme cadastro municipal. */
-  cObra?: string
   /** Inscrição imobiliária fiscal do imóvel (`inscImobFisc`). */
   inscImobFisc?: string
-  /** Número da ART — Anotação de Responsabilidade Técnica (`art`). */
-  art?: string
+  /** Código da obra (`cObra`), conforme cadastro municipal (CNO ou CEI). */
+  cObra?: string
 }
 
 /**
@@ -310,6 +315,8 @@ export interface ValoresServicoData {
  * Aplicável quando o tomador é obrigado a reter na fonte: IRRF, CSLL, PIS, COFINS.
  */
 export interface TributacaoFederalData {
+  /** Valor retido da CP — Contribuição Previdenciária (`vRetCP`). */
+  valorRetidoCp?: number
   /** Valor retido do IRRF — Imposto de Renda Retido na Fonte (`vRetIRRF`). */
   valorRetidoIrrf?: number
   /** Valor retido da CSLL — Contribuição Social sobre o Lucro Líquido (`vRetCSLL`). */
