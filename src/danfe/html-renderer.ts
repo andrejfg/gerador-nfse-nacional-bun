@@ -4,14 +4,11 @@
  */
 
 import { readFileSync, existsSync } from 'node:fs'
-import { join, dirname } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { join } from 'node:path'
 import QRCode from 'qrcode'
 import type { NfseSchema, ValoresNfseSchema, EnderNacSchema, IBSCBSSchema } from '../xml/nfse-parser.js'
 import { formatCnpj, formatCpf, formatCep, formatTelefone } from '../utils/cpf-cnpj.js'
 import { DanfeEnvironment } from '../types/enums.js'
-
-const __dirname = dirname(fileURLToPath(import.meta.url))
 
 const SIMPLES_NACIONAL: Record<number, string> = {
   1: 'Não Optante', 2: 'MEI', 3: 'ME/EPP',
