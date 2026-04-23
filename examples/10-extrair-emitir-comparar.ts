@@ -447,8 +447,8 @@ function parseTributacao(valRaw: Record<string, unknown> | undefined): DpsData['
     result.federal = {
       cstPisCofins:         str(piscof?.['CST']),
       baseCalculoPisCofins: numOpt(piscof?.['vBCPisCofins']),
-      aliquotaPis:          numOpt(piscof?.['pAliqPis']),
-      aliquotaCofins:       numOpt(piscof?.['pAliqCofins']),
+      aliquotaPis:          piscof?.['pAliqPis']    != null ? Number(piscof['pAliqPis'])    / 100 : undefined,
+      aliquotaCofins:       piscof?.['pAliqCofins'] != null ? Number(piscof['pAliqCofins']) / 100 : undefined,
       valorPis:             numOpt(piscof?.['vPis']),
       valorCofins:          numOpt(piscof?.['vCofins']),
       tipoRetencaoPisCofins: numOpt(piscof?.['tpRetPisCofins']) as TipoRetencaoPisCofins | undefined,

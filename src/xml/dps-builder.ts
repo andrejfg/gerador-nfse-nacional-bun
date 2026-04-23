@@ -140,7 +140,7 @@ function buildValores(val: ValoresServicoData, trib?: TributacaoData): string {
   // tribFed — opcional
   const tribFedXml = fed ? (() => {
     const piscofinXml = fed.cstPisCofins
-      ? `<piscofins>${tag('CST', fed.cstPisCofins)}${fed.baseCalculoPisCofins !== undefined ? tag('vBCPisCofins', fmt(fed.baseCalculoPisCofins)) : ''}${fed.aliquotaPis !== undefined ? tag('pAliqPis', fmt(fed.aliquotaPis)) : ''}${fed.aliquotaCofins !== undefined ? tag('pAliqCofins', fmt(fed.aliquotaCofins)) : ''}${fed.valorPis !== undefined ? tag('vPis', fmt(fed.valorPis)) : ''}${fed.valorCofins !== undefined ? tag('vCofins', fmt(fed.valorCofins)) : ''}${tag('tpRetPisCofins', fed.tipoRetencaoPisCofins)}</piscofins>`
+      ? `<piscofins>${tag('CST', fed.cstPisCofins)}${fed.baseCalculoPisCofins !== undefined ? tag('vBCPisCofins', fmt(fed.baseCalculoPisCofins)) : ''}${fed.aliquotaPis !== undefined ? tag('pAliqPis', fmt(fed.aliquotaPis * 100)) : ''}${fed.aliquotaCofins !== undefined ? tag('pAliqCofins', fmt(fed.aliquotaCofins * 100)) : ''}${fed.valorPis !== undefined ? tag('vPis', fmt(fed.valorPis)) : ''}${fed.valorCofins !== undefined ? tag('vCofins', fmt(fed.valorCofins)) : ''}${tag('tpRetPisCofins', fed.tipoRetencaoPisCofins)}</piscofins>`
       : ''
     return `<tribFed>${piscofinXml}${fed.valorRetidoIrrf !== undefined ? tag('vRetIRRF', fmt(fed.valorRetidoIrrf)) : ''}${fed.valorRetidoCsll !== undefined ? tag('vRetCSLL', fmt(fed.valorRetidoCsll)) : ''}</tribFed>`
   })() : ''

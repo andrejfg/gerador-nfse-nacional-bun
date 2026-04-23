@@ -108,6 +108,29 @@ describe('buildDpsXml', () => {
     expect(buildDpsXml(makeDps())).toContain('<pAliq>5.00</pAliq>')
   })
 
+  test('alíquotas PIS/COFINS convertidas de decimal para percentual', () => {
+    const dps = makeDps({
+      tributacao: {
+        issqn: {
+          tributacaoIssqn: TributacaoIssqn.TributadaMunicipioPrestador,
+          aliquota: 0.05,
+          tipoRetencaoIssqn: TipoRetencaoIssqn.NaoRetido,
+        },
+        federal: {
+          cstPisCofins: '00',
+          baseCalculoPisCofins: 918.99,
+          aliquotaPis: 0.0065,
+          aliquotaCofins: 0.03,
+          valorPis: 5.97,
+          valorCofins: 27.57,
+        },
+      },
+    })
+    const xml = buildDpsXml(dps)
+    expect(xml).toContain('<pAliqPis>0.65</pAliqPis>')
+    expect(xml).toContain('<pAliqCofins>3.00</pAliqCofins>')
+  })
+
   test('inclui <toma> quando tomador é fornecido', () => {
     const dps = makeDps({ tomador: { cnpj: '00000000000191', nome: 'Banco do Brasil' } })
     const xml = buildDpsXml(dps)
