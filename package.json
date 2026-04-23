@@ -79,6 +79,7 @@
     "@xmldom/xmldom": "^0.8.12"
   },
   "optionalDependencies": {
+    "@rollup/rollup-linux-x64-gnu": "4.60.1",
     "puppeteer": "^24.42.0"
   },
   "devDependencies": {
