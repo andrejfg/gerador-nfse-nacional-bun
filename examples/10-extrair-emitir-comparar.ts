@@ -24,6 +24,10 @@ import { XMLParser } from 'fast-xml-parser'
 import {
   buildDpsXml,
   validateDps,
+  parseNfseXml,
+  buildPreviewSchema,
+  DanfeService,
+  DanfePreviewFormat,
   TipoAmbiente,
   EmitenteDPS,
   TributacaoIssqn,
@@ -118,12 +122,81 @@ const prettyRebuilt  = prettyPrintXml(normRebuilt)
 const equal = normOriginal === normRebuilt
 
 // ---------------------------------------------------------------------------
-// 6. Grava relatório em arquivo para análise
+// 6. Comparação Preview × NFS-e (apenas para XMLs de NFS-e completa)
+// ---------------------------------------------------------------------------
+
+type PreviewCheck = { campo: string; sefin: number; preview: number; ok: boolean }
+let previewChecks: PreviewCheck[] = []
+let previewHtmlPath: string | null = null
+let previewError: string | null = null
+
+if (originalXml.includes('<NFSe')) {
+  try {
+    const nfseSchema  = parseNfseXml(originalXml)
+    const sefinVal    = nfseSchema.infNFSe?.valores
+    if (sefinVal) {
+      // Para NaoOptante SN: DPS não carrega vISSQN/vBC — SEFIN os calcula.
+      // Augmenta o DPS com os valores reais para que o preview possa inferir
+      // alíquota e ISSQN apurado corretamente.
+      const augDps: DpsData = {
+        ...dps,
+        infDps: {
+          ...dps.infDps,
+          valores: {
+            ...dps.infDps.valores,
+            vBC:    dps.infDps.valores.vBC    ?? sefinVal.vBC,
+            vISSQN: dps.infDps.valores.vISSQN ?? (sefinVal.vISSQN > 0 ? sefinVal.vISSQN : undefined),
+          },
+        },
+      }
+
+      const pv = buildPreviewSchema(augDps.infDps).infNFSe?.valores
+      const near = (a: number, b: number | undefined) => b != null && Math.abs(a - b) < 0.005
+
+      previewChecks = [
+        { campo: 'vBC',        sefin: sefinVal.vBC,        preview: pv?.vBC        ?? 0, ok: near(sefinVal.vBC,        pv?.vBC)        },
+        { campo: 'pAliqAplic', sefin: sefinVal.pAliqAplic, preview: pv?.pAliqAplic ?? 0, ok: near(sefinVal.pAliqAplic, pv?.pAliqAplic) },
+        { campo: 'vISSQN',     sefin: sefinVal.vISSQN,     preview: pv?.vISSQN     ?? 0, ok: near(sefinVal.vISSQN,     pv?.vISSQN)     },
+        { campo: 'vLiq',       sefin: sefinVal.vLiq,        preview: pv?.vLiq       ?? 0, ok: near(sefinVal.vLiq,       pv?.vLiq)       },
+      ]
+
+      const danfe = new DanfeService()
+      const previewResult = await danfe.previewFromDps(augDps.infDps, { format: DanfePreviewFormat.Html })
+      previewHtmlPath = join(__dirname, `render-preview-${basename(fullPath, '.xml')}.html`)
+      writeFileSync(previewHtmlPath, previewResult.html, 'utf-8')
+    }
+  } catch (e) {
+    previewError = String(e)
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 7. Grava relatório em arquivo para análise
 // ---------------------------------------------------------------------------
 
 const xmlBaseName = basename(fullPath, '.xml')
 const reportPath = join(__dirname, `compare-${xmlBaseName}.report.md`)
 const diff = equal ? null : firstDiff(normOriginal, normRebuilt)
+
+const allPreviewMatch = previewChecks.length > 0 && previewChecks.every(c => c.ok)
+
+const previewSection = previewChecks.length > 0 ? [
+  `## Comparação Preview × NFS-e Emitida`,
+  ``,
+  `**Resultado:** ${allPreviewMatch ? '✅ Preview bate com a NFS-e' : '❌ Preview diverge da NFS-e'}`,
+  ``,
+  `| Campo | NFS-e (SEFIN) | Preview (biblioteca) | Match? |`,
+  `|---|---|---|---|`,
+  ...previewChecks.map(c => `| \`${c.campo}\` | \`${Math.round(c.sefin * 100) / 100}\` | \`${Math.round(c.preview * 100) / 100}\` | ${c.ok ? '✅' : '❌'} |`),
+  ``,
+  previewHtmlPath ? `Preview HTML: \`${basename(previewHtmlPath)}\`` : '',
+  ``,
+] : previewError ? [
+  `## Comparação Preview × NFS-e Emitida`,
+  ``,
+  `⚠️ Erro na comparação: ${previewError}`,
+  ``,
+] : []
 
 const report = [
   `# Comparação DPS round-trip`,
@@ -169,6 +242,7 @@ const report = [
     '```',
     ``,
   ] : []),
+  ...previewSection,
 ].join('\n')
 
 writeFileSync(reportPath, report, 'utf-8')
@@ -183,6 +257,24 @@ if (equal) {
   console.log('   original :', JSON.stringify(diff!.original.slice(0, 120)))
   console.log('   reemitido:', JSON.stringify(diff!.rebuilt.slice(0, 120)))
   process.exit(2)
+}
+
+if (previewChecks.length > 0) {
+  const r2 = (n: number) => Math.round(n * 100) / 100
+  console.log('\n📊 Comparação Preview × NFS-e emitida:')
+  for (const c of previewChecks) {
+    const icon = c.ok ? '✅' : '❌'
+    console.log(`  ${icon} ${c.campo.padEnd(14)} sefin=${r2(c.sefin)}  preview=${r2(c.preview)}`)
+  }
+  if (allPreviewMatch) {
+    console.log('  🎉 Preview bate com a NFS-e emitida.')
+  } else {
+    console.log('  ⚠️  Preview diverge da NFS-e emitida.')
+    process.exit(3)
+  }
+  if (previewHtmlPath) console.log(`  📄 Preview HTML: ${previewHtmlPath}`)
+} else if (previewError) {
+  console.warn('\n⚠️  Comparação preview falhou:', previewError)
 }
 
 // ===========================================================================

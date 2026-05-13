@@ -17,6 +17,7 @@ export type { DanfeResult, DanfeGenerateOptions, PreviewOptions, PreviewResult }
 export { DanfePreviewFormat } from './danfe/danfe-service.js'
 export { renderDanfseHtml } from './danfe/html-renderer.js'
 export type { DanfeWarning, DanfeRenderResult, DanfeOptions } from './danfe/html-renderer.js'
+export { buildPreviewSchema } from './danfe/preview-builder.js'
 
 // XML builders
 export { buildDpsXml } from './xml/dps-builder.js'
