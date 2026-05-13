@@ -126,6 +126,45 @@ const DPS_MINIMO: InfDpsData = {
   valores: { vServico: 100 },
 }
 
+/** DPS com aliquota mas sem vISSQN explícito — testa cálculo automático */
+const DPS_CALC_ISSQN: InfDpsData = {
+  id: 'DPS000000000000000000000000000100000000000001',
+  tipoAmbiente: TipoAmbiente.Homologacao,
+  dataEmissao: '2026-04-30T17:25:29-03:00',
+  numeroDps: '1000000000001',
+  serie: '001',
+  dataCompetencia: '2026-04-30',
+  tipoEmitente: EmitenteDPS.Prestador,
+  codigoLocalEmissao: '3144805',
+  prestador: { cnpj: '11222333000181', nome: 'EMPRESA EXEMPLO LTDA' },
+  servico: {
+    localPrestacao: { cLocPrestacao: '3144805' },
+    codigoServico: { cServTribNac: '171201' },
+    xDescServ: 'Gestão de patrimônio',
+  },
+  valores: { vServico: 800, vBC: 800 },
+  tributacao: {
+    issqn: {
+      tributacaoIssqn: TributacaoIssqn.TributadaMunicipioPrestador,
+      tipoRetencaoIssqn: TipoRetencaoIssqn.NaoRetido,
+      aliquota: 0.02,
+    },
+  },
+}
+
+/** DPS com ISSQN retido pelo tomador — vLiq deve descontar o ISSQN */
+const DPS_ISSQN_RETIDO: InfDpsData = {
+  ...DPS_CALC_ISSQN,
+  id: 'DPS_RETIDO',
+  tributacao: {
+    issqn: {
+      tributacaoIssqn: TributacaoIssqn.TributadaMunicipioPrestador,
+      tipoRetencaoIssqn: TipoRetencaoIssqn.RetidoTomador,
+      aliquota: 0.02,
+    },
+  },
+}
+
 // ---------------------------------------------------------------------------
 
 describe('buildPreviewSchema — mapeamento DPS → NfseSchema', () => {
@@ -285,6 +324,57 @@ describe('buildPreviewSchema — mapeamento DPS → NfseSchema', () => {
       expect(v?.pAliqAplic).toBe(0)
       expect(v?.PIS).toBe(0)
       expect(v?.COFINS).toBe(0)
+    })
+
+    test('vISSQN calculado de vBC × aliquota quando não fornecido', () => {
+      const v = buildPreviewSchema(DPS_CALC_ISSQN).infNFSe?.valores
+      // 800 × 0.02 = 16.00
+      expect(v?.vISSQN).toBe(16)
+    })
+
+    test('pAliqAplic = 2 a partir de aliquota 0.02 (×100)', () => {
+      const v = buildPreviewSchema(DPS_CALC_ISSQN).infNFSe?.valores
+      expect(v?.pAliqAplic).toBe(2)
+    })
+
+    test('vLiq = vServico quando ISSQN Não Retido (não deduzido)', () => {
+      const v = buildPreviewSchema(DPS_CALC_ISSQN).infNFSe?.valores
+      expect(v?.vLiq).toBe(800)
+    })
+
+    test('vLiq = vServico − vISSQN quando ISSQN retido pelo tomador', () => {
+      const v = buildPreviewSchema(DPS_ISSQN_RETIDO).infNFSe?.valores
+      // 800 − 16 = 784
+      expect(v?.vLiq).toBe(784)
+    })
+
+    test('vISSQN explícito tem precedência sobre cálculo automático', () => {
+      const v = buildPreviewSchema(DPS_COMPLETO).infNFSe?.valores
+      // DPS_COMPLETO tem vISSQN: 250 explícito
+      expect(v?.vISSQN).toBe(250)
+    })
+
+    test('pAliqAplic inferido de vISSQN/vBC quando aliquota omitida', () => {
+      // vISSQN=16, vBC=800 → 16/800 = 0.02 → pAliqAplic = 2
+      const v = buildPreviewSchema(DPS_CALC_ISSQN).infNFSe?.valores
+      expect(v?.pAliqAplic).toBe(2)
+    })
+
+    test('pAliqAplic vindo de vals.pAliq quando aliquota tributacao omitida', () => {
+      const dps: InfDpsData = {
+        ...DPS_MINIMO,
+        valores: { vServico: 1000, vBC: 1000, pAliq: 0.03 },
+        tributacao: {
+          issqn: {
+            tributacaoIssqn: TributacaoIssqn.TributadaMunicipioPrestador,
+            tipoRetencaoIssqn: TipoRetencaoIssqn.NaoRetido,
+            // aliquota omitida intencionalmente
+          },
+        },
+      }
+      const v = buildPreviewSchema(dps).infNFSe?.valores
+      // vals.pAliq = 0.03 → pAliqAplic = 3
+      expect(v?.pAliqAplic).toBe(3)
     })
   })
 })

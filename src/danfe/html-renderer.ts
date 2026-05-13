@@ -45,7 +45,9 @@ export interface DanfeOptions {
   fontSize?: number
   templatePath?: string
   logoPath?: string
-  /** Quando true, sobrepõe uma marca d'água "PRÉVIA" no documento renderizado. */
+  /** Texto exibido na marca d'água quando isPreview=true. Padrão: 'SEM VALOR FISCAL'. */
+  watermarkText?: string
+  /** Quando true, sobrepõe uma marca d'água no documento renderizado. */
   isPreview?: boolean
 }
 
@@ -104,17 +106,14 @@ function h(value: string | undefined | null): string {
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 }
 
-function fmtEndereco(end?: EnderNacSchema): string {
+// Endereço sem município e CEP (exibidos como campos separados no template)
+function fmtEnderecoSemMunCep(end?: EnderNacSchema): string {
   if (!end) return '-'
   const parts: string[] = []
   if (end.xLgr) parts.push(end.xLgr)
   if (end.nro) parts.push(end.nro)
   if (end.xCpl) parts.push(end.xCpl)
   if (end.xBairro) parts.push(end.xBairro)
-  const mun = getMunicipio(end.cMun)
-  if (mun) parts.push(`${mun.nome}/${mun.uf}`)
-  else if (end.cMun) parts.push(end.cMun)
-  if (end.CEP) parts.push(`CEP: ${formatCep(end.CEP)}`)
   return parts.join(', ') || '-'
 }
 
@@ -124,7 +123,8 @@ function fmtDoc(cnpj: string, cpf: string): string {
   return '-'
 }
 
-const PREVIEW_WATERMARK_HTML = `
+function buildWatermarkHtml(text: string): string {
+  return `
 <style>
   .danfe-preview-watermark {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -133,7 +133,7 @@ const PREVIEW_WATERMARK_HTML = `
   }
   .danfe-preview-watermark span {
     display: block;
-    font-size: 90px; font-weight: 900; letter-spacing: 0.05em;
+    font-size: 60px; font-weight: 900; letter-spacing: 0.05em;
     color: rgba(200, 0, 0, 0.13);
     transform: rotate(-40deg);
     white-space: nowrap; text-transform: uppercase;
@@ -144,12 +144,14 @@ const PREVIEW_WATERMARK_HTML = `
     .danfe-preview-watermark { position: fixed; }
   }
 </style>
-<div class="danfe-preview-watermark"><span>PRÉVIA — SEM VALOR FISCAL</span></div>`
+<div class="danfe-preview-watermark"><span>${text}</span></div>`
+}
 
-function injectWatermark(html: string): string {
+function injectWatermark(html: string, text: string): string {
+  const watermark = buildWatermarkHtml(text)
   const closeBody = html.lastIndexOf('</body>')
-  if (closeBody !== -1) return html.slice(0, closeBody) + PREVIEW_WATERMARK_HTML + html.slice(closeBody)
-  return html + PREVIEW_WATERMARK_HTML
+  if (closeBody !== -1) return html.slice(0, closeBody) + watermark + html.slice(closeBody)
+  return html + watermark
 }
 
 function applyConditionals(html: string, flags: Record<string, boolean>): string {
@@ -198,13 +200,36 @@ export async function renderDanfseHtml(
   // Resolve município do emitente e do local de prestação
   const munEmit = getMunicipio(emit?.enderNac?.cMun ?? '')
   const munLocPrest = getMunicipio(serv?.cLocPrestacao ?? '')
+  const munToma = getMunicipio(dps?.toma?.enderNac?.cMun ?? '')
 
   // Regime tributário: prioriza emit (NFS-e), fallback prest (DPS)
   const regTrib = emit?.regTrib ?? dps?.prest?.regTrib
 
+  // Formata cTribNac "171201" → "17.12.01"
+  function fmtCTribNac(code: string): string {
+    if (!code || code.length < 6) return code
+    return `${code.slice(0, 2)}.${code.slice(2, 4)}.${code.slice(4, 6)}${code.length > 6 ? code.slice(6) : ''}`
+  }
+
+  // ISSQN Apurado: usa infNFSe.valores.vISSQN quando disponível (render from XML),
+  // ou dpsVal.pAliq × vServ (calculado pelo renderer para prévia)
+  const vISSQNApurado = (() => {
+    if (val?.vISSQN != null && val.vISSQN > 0) return val.vISSQN
+    const pAliq = dpsVal?.pAliq ? Number(dpsVal.pAliq) : 0
+    const vServ = val?.vBC ?? dpsVal?.vServ ?? 0
+    return pAliq > 0 && vServ > 0 ? Math.round(vServ * (pAliq / 100) * 100) / 100 : 0
+  })()
+
+  // ISSQN Retido: apenas quando tpRetISSQN ≠ 1 (Não Retido)
+  const issqnNaoRetido = !dpsVal?.tpRetISSQN || dpsVal.tpRetISSQN === '1'
+  const vISSQNRetido = issqnNaoRetido ? 0 : vISSQNApurado
+
+  const totalRetFed = irrf + cp + csll
+
   const p: Record<string, string> = {
     '{{CHAVE_NFSE}}': h(chNFSe),
     '{{QRCODE_IMG}}': qrImg ? `<img src="${qrImg}" alt="QR Code" />` : '',
+    '{{MUN_HEADER}}': munEmit ? h(`${munEmit.nome} - ${munEmit.uf}`) : h(inf.xLocEmi || ''),
     '{{NFSE_NUMERO}}': h(inf.nNFSe),
     '{{NFSE_NDFSE}}': h(inf.nDFSe),
     '{{NFSE_COMPETENCIA}}': h(fmtDate(dps?.dCompet ?? '')),
@@ -212,11 +237,13 @@ export async function renderDanfseHtml(
     '{{NFSE_DH_EMI}}': h(fmtDateTime(dps?.dhEmi ?? '')),
     '{{DPS_NUMERO}}': h(dps?.nDPS),
     '{{DPS_SERIE}}': h(dps?.serie),
-    '{{PREST_CNPJ}}': h(fmtDoc(emit?.CNPJ ?? '', '')),
+    '{{PREST_CNPJ}}': h(fmtDoc(emit?.CNPJ ?? '', emit?.CPF ?? '')),
     '{{PREST_XNOME}}': h(emit?.xNome),
     '{{PREST_XFANT}}': h(emit?.xFant),
     '{{PREST_IM}}': h(emit?.IM),
-    '{{PREST_ENDERECO}}': h(fmtEndereco(emit?.enderNac)),
+    '{{PREST_ENDERECO}}': h(fmtEnderecoSemMunCep(emit?.enderNac)),
+    '{{PREST_MUNICIPIO}}': munEmit ? h(`${munEmit.nome} - ${munEmit.uf}`) : h(emit?.enderNac?.cMun || '-'),
+    '{{PREST_CEP}}': h(emit?.enderNac?.CEP ? formatCep(emit.enderNac.CEP) : '-'),
     '{{PREST_FONE}}': h(emit?.fone ? formatTelefone(emit.fone) : '-'),
     '{{PREST_EMAIL}}': h(emit?.email),
     '{{PREST_REGIME}}': h(regTrib ? (REGIME_ESP_TRIB[regTrib.regEspTrib] ?? String(regTrib.regEspTrib)) : '-'),
@@ -224,38 +251,62 @@ export async function renderDanfseHtml(
     '{{TOMA_CNPJ}}': h(fmtDoc(toma?.CNPJ ?? '', toma?.CPF ?? '')),
     '{{TOMA_XNOME}}': h(toma?.xNome),
     '{{TOMA_IM}}': h(toma?.IM),
-    '{{TOMA_ENDERECO}}': h(fmtEndereco(toma?.enderNac)),
+    '{{TOMA_ENDERECO}}': h(fmtEnderecoSemMunCep(toma?.enderNac)),
+    '{{TOMA_MUNICIPIO}}': munToma ? h(`${munToma.nome} - ${munToma.uf}`) : h(toma?.enderNac?.cMun || '-'),
+    '{{TOMA_CEP}}': h(toma?.enderNac?.CEP ? formatCep(toma.enderNac.CEP) : '-'),
     '{{TOMA_FONE}}': h(toma?.fone ? formatTelefone(toma.fone) : '-'),
     '{{TOMA_EMAIL}}': h(toma?.email),
     '{{INTERM_CNPJ}}': h(fmtDoc(interm?.CNPJ ?? '', interm?.CPF ?? '')),
     '{{INTERM_XNOME}}': h(interm?.xNome),
+    '{{SERVICO_CTRIBNAC}}': (() => {
+      const ctn = serv?.cTribNac ?? ''
+      const xtn = inf.xTribNac ?? ''
+      const fmt_ = fmtCTribNac(ctn)
+      return h(fmt_ && xtn ? `${fmt_} - ${xtn}` : (fmt_ || xtn || '-'))
+    })(),
     '{{SERVICO_XNS}}': h(serv?.cNBS || inf.xNBS),
     '{{SERVICO_XCM}}': h(serv?.cServMun),
-    '{{SERVICO_XCLES}}': munLocPrest ? h(`${munLocPrest.nome}-${munLocPrest.uf}`) : h(inf.xLocPrestacao || serv?.cLocPrestacao),
+    '{{SERVICO_XCLES}}': munLocPrest ? h(`${munLocPrest.nome} - ${munLocPrest.uf}`) : h(inf.xLocPrestacao || serv?.cLocPrestacao),
     '{{SERVICO_XPA}}': '-',
     '{{SERVICO_DESCRICAO}}': h(serv?.xDescServ ?? '-').replace(/\n/g, '<br>'),
     '{{ISSQN_TPIMUNICIPAL}}': h(TRIB_ISSQN[dpsVal?.tribISSQN ?? ''] ?? (inf.xTribMun || inf.xTribNac)),
-    '{{ISSQN_CMUNICIPIO}}': munEmit ? h(`${munEmit.nome}-${munEmit.uf}`) : h(inf.xLocEmi || '-'),
-    '{{ISSQN_RET}}': h(RET_ISSQN[dpsVal?.tpRetISSQN ?? ''] ?? dpsVal?.tpRetISSQN ?? '-'),
-    '{{ISSQN_TPIMUNIDADE}}': h(dpsVal?.tpImunidade ? (TP_IMUNIDADE[dpsVal.tpImunidade] ?? dpsVal.tpImunidade) : '-'),
     '{{ISSQN_CPAISRESULT}}': h(dpsVal?.cPaisResult || '-'),
-    '{{ISSQN_TPSUSP}}': h(dpsVal?.tpSusp || '-'),
+    '{{ISSQN_CMUNICIPIO}}': munEmit ? h(`${munEmit.nome} - ${munEmit.uf}`) : h(inf.xLocIncid || inf.xLocEmi || '-'),
+    '{{ISSQN_REGESPECIA}}': h(regTrib ? (REGIME_ESP_TRIB[regTrib.regEspTrib] ?? String(regTrib.regEspTrib)) : '-'),
+    '{{ISSQN_TPIMUNIDADE}}': h(dpsVal?.tpImunidade ? (TP_IMUNIDADE[dpsVal.tpImunidade] ?? dpsVal.tpImunidade) : '-'),
+    '{{ISSQN_TPSUSP_TEXT}}': h(dpsVal?.tpSusp ? `Sim (tipo ${dpsVal.tpSusp})` : 'Não'),
     '{{ISSQN_NPROCESSO}}': h(dpsVal?.nProcesso || '-'),
     '{{ISSQN_NBM}}': h(dpsVal?.nBM || '-'),
-    '{{ISSQN_VBASE}}': val ? h(`R$ ${fmt(val.vBC)}`) : '-',
-    '{{ISSQN_PALIQ}}': val ? h(`${fmt(val.pAliqAplic, 4)}%`) : '-',
-    '{{ISSQN_VCALCBM}}': val ? h(`R$ ${fmt(val.vISSQN)}`) : '-',
-    '{{ISSQN_VTOTALRET}}': val ? h(`R$ ${fmt(val.vTotalRet)}`) : '-',
-    '{{ISSQN_VLIQ}}': val ? h(`R$ ${fmt(val.vLiq)}`) : '-',
-    '{{IRRF_VALUE}}': h(`R$ ${fmt(irrf)}`),
-    '{{CP_VALUE}}': h(`R$ ${fmt(cp)}`),
-    '{{CONTRIB_SOCIAIS}}': h(`R$ ${fmt(csll + pis + cofins)}`),
-    '{{FED_TOTAL}}': h(`R$ ${fmt(irrf + cp + csll + pis + cofins)}`),
+    '{{ISSQN_VSERVICO}}': h(`R$ ${fmt(vServico)}`),
+    '{{ISSQN_VDESCINCOND}}': dpsVal?.vDescIncond ? h(`R$ ${fmt(dpsVal.vDescIncond)}`) : '-',
+    '{{ISSQN_VDEDUCOES}}': dpsVal?.vDR ? h(`R$ ${fmt(dpsVal.vDR)}`) : (dpsVal?.pDR ? h(`${fmt(dpsVal.pDR, 2)}%`) : '-'),
+    '{{ISSQN_VBASE}}': val ? h(`R$ ${fmt(val.vBC)}`) : (dpsVal ? h(`R$ ${fmt(dpsVal.vServ)}`) : '-'),
+    '{{ISSQN_PALIQ}}': val ? h(`${fmt(val.pAliqAplic, 2)}%`) : (dpsVal?.pAliq ? h(`${fmt(Number(dpsVal.pAliq), 2)}%`) : '-'),
+    '{{ISSQN_RET}}': h(RET_ISSQN[dpsVal?.tpRetISSQN ?? ''] ?? dpsVal?.tpRetISSQN ?? '-'),
+    '{{ISSQN_VCALCBM}}': h(`R$ ${fmt(vISSQNApurado)}`),
+    '{{IRRF_VALUE}}': irrf > 0 ? h(`R$ ${fmt(irrf)}`) : '-',
+    '{{FED_CONTRIB_PREV}}': cp > 0 ? h(`R$ ${fmt(cp)}`) : '-',
+    '{{FED_CONTRIB_SOC}}': csll > 0 ? h(`R$ ${fmt(csll)}`) : '-',
+    '{{FED_CONTRIB_SOC_DESC}}': '-',
+    '{{FED_PIS_PROPRIO}}': pis > 0 ? h(`R$ ${fmt(pis)}`) : '-',
+    '{{FED_COFINS_PROPRIO}}': cofins > 0 ? h(`R$ ${fmt(cofins)}`) : '-',
     '{{FINANCEIRO_VSERVICO}}': h(`R$ ${fmt(vServico)}`),
-    '{{FINANCEIRO_VDESCCONDICIONAL}}': val ? h(`R$ ${fmt(val.vDescCondicionado)}`) : h(dpsVal ? `R$ ${fmt(dpsVal.vDescCond)}` : '-'),
-    '{{FINANCEIRO_VDESCONTOINCOND}}': val ? h(`R$ ${fmt(val.vDescIncondicionado)}`) : h(dpsVal ? `R$ ${fmt(dpsVal.vDescIncond)}` : '-'),
-    '{{FINANCEIRO_VDEDUCAO}}': h(dpsVal ? (dpsVal.vDR ? `R$ ${fmt(dpsVal.vDR)}` : dpsVal.pDR ? `${fmt(dpsVal.pDR, 2)}%` : '-') : '-'),
+    '{{FINANCEIRO_VDESCCONDICIONAL}}': (() => {
+      const v = val?.vDescCondicionado ?? dpsVal?.vDescCond ?? 0
+      return v > 0 ? h(`R$ ${fmt(v)}`) : '-'
+    })(),
+    '{{FINANCEIRO_VDESCONTOINCOND}}': (() => {
+      const v = val?.vDescIncondicionado ?? dpsVal?.vDescIncond ?? 0
+      return v > 0 ? h(`R$ ${fmt(v)}`) : '-'
+    })(),
+    '{{FINANCEIRO_VISSQN_RETIDO}}': vISSQNRetido > 0 ? h(`R$ ${fmt(vISSQNRetido)}`) : '-',
+    '{{FINANCEIRO_TOTALRET}}': totalRetFed > 0 ? h(`R$ ${fmt(totalRetFed)}`) : '-',
+    '{{FINANCEIRO_PISCOFINS_PROPRIO}}': (pis + cofins) > 0 ? h(`R$ ${fmt(pis + cofins)}`) : '-',
     '{{FINANCEIRO_VLIQ}}': val ? h(`R$ ${fmt(val.vLiq)}`) : '-',
+    '{{TRIB_PCT_FED}}': h(`${fmt(dpsVal?.pTotTribFed ?? 0, 2)} %`),
+    '{{TRIB_PCT_EST}}': h(`${fmt(dpsVal?.pTotTribEst ?? 0, 2)} %`),
+    '{{TRIB_PCT_MUN}}': h(`${fmt(dpsVal?.pTotTribMun ?? 0, 2)} %`),
+    '{{COMPL_NBS}}': h(serv?.cNBS || inf.xNBS || '-'),
     '{{IBSCBS_VBC}}': ibs ? h(`R$ ${fmt(ibs.vBC)}`) : '-',
     '{{IBSCBS_PIBSUF}}': ibs ? h(`${fmt(ibs.pAliqEfetUF || ibs.pIBSUF, 4)}%`) : '-',
     '{{IBSCBS_VIBSUF}}': ibs ? h(`R$ ${fmt(ibs.vIBSUF)}`) : '-',
@@ -268,8 +319,8 @@ export async function renderDanfseHtml(
     '{{SUBST_CHAVE}}': h(dps?.subst?.chSubstda || '-'),
     '{{SUBST_CMOTIVO}}': h(dps?.subst?.cMotivo || '-'),
     '{{SUBST_XMOTIVO}}': h(dps?.subst?.xMotivo || '-'),
-    '{{COMPLEMENTO_XOUTINF}}': inf.xOutInf || '',
-    '{{COMPLEMENTO_XINFADINAL}}': serv?.xInfComp ?? '',
+    '{{COMPLEMENTO_XOUTINF}}': h(inf.xOutInf || '-'),
+    '{{COMPLEMENTO_XINFADINAL}}': h(serv?.xInfComp || '-'),
     '{{COMPLEMENTO_IDDOCTEC}}': h(serv?.idDocTec || '-'),
     '{{COMPLEMENTO_DOCREF}}': h(serv?.docRef || '-'),
     '{{COMPLEMENTO_XPED}}': h(serv?.xPed || '-'),
@@ -279,9 +330,11 @@ export async function renderDanfseHtml(
   const templatePath = options.templatePath ?? TEMPLATE_PATH
   let html = readFileSync(templatePath, 'utf-8')
 
+  const intermIdentificado = !!(interm?.CNPJ || interm?.CPF)
   html = applyConditionals(html, {
     TOMADOR_IDENTIFIED: !!(toma?.CNPJ || toma?.CPF || toma?.xNome),
-    INTERMEDIARIO_IDENTIFIED: !!(interm?.CNPJ || interm?.CPF),
+    INTERM_DADOS_IDENTIFIED: intermIdentificado,
+    INTERM_NAO_IDENTIFICADO: !intermIdentificado,
     SUBSTITUICAO_IDENTIFIED: !!(dps?.subst),
     IBSCBS_IDENTIFIED: !!ibs,
     IS_CANCELADA: isCancelled,
@@ -297,7 +350,7 @@ export async function renderDanfseHtml(
     html = html.replaceAll(ph, '-')
   }
 
-  if (options.isPreview) html = injectWatermark(html)
+  if (options.isPreview) html = injectWatermark(html, options.watermarkText ?? 'SEM VALOR FISCAL')
 
   const env = (dps?.tpAmb ?? 1) === 1 ? DanfeEnvironment.Production : DanfeEnvironment.Restricted
   return { html, warnings, environment: env }

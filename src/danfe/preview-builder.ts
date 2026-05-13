@@ -6,6 +6,7 @@
 
 import type { InfDpsData, EnderecoData } from '../types/dtos.js'
 import type { NfseSchema, EnderNacSchema } from '../xml/nfse-parser.js'
+import { TipoRetencaoIssqn } from '../types/enums.js'
 
 function mapEndereco(e?: EnderecoData): EnderNacSchema | undefined {
   if (!e) return undefined
@@ -138,12 +139,21 @@ export function buildPreviewSchema(dps: InfDpsData): NfseSchema {
           },
         },
       },
-      valores: {
+      valores: (() => {
+        const vBC      = vals.vBC ?? vals.vServico
+        const aliquota = trib?.issqn?.aliquota
+          ?? vals.pAliq
+          ?? ((vals.vISSQN != null && vals.vISSQN > 0 && vBC > 0) ? vals.vISSQN / vBC : 0)
+        const vISSQN   = vals.vISSQN ?? Math.round(vBC * aliquota * 100) / 100
+        const tpRet    = trib?.issqn?.tipoRetencaoIssqn
+        const vRetido  = (tpRet != null && tpRet !== TipoRetencaoIssqn.NaoRetido) ? vISSQN : 0
+        const vLiq     = vals.vLiq ?? (vals.vServico - vRetido - (vals.vDescIncondicionado ?? 0) - (vals.vDescCondicionado ?? 0) - (vals.vTotalRet ?? 0))
+        return {
         vServico:            vals.vServico,
-        vBC:                 vals.vBC       ?? vals.vServico,
-        pAliqAplic:          trib?.issqn?.aliquota != null ? trib.issqn.aliquota * 100 : 0,
-        vISSQN:              vals.vISSQN    ?? 0,
-        vLiq:                vals.vServico  - (vals.vISSQN ?? 0),
+        vBC,
+        pAliqAplic:          aliquota * 100,
+        vISSQN,
+        vLiq,
         vCalcBM:             0,
         vCalcDR:             0,
         vTotalRet:           vals.vTotalRet ?? 0,
@@ -154,7 +164,8 @@ export function buildPreviewSchema(dps: InfDpsData): NfseSchema {
         CSLL:                trib?.federal?.valorRetidoCsll  ?? 0,
         PIS:                 trib?.federal?.valorPis         ?? 0,
         COFINS:              trib?.federal?.valorCofins      ?? 0,
-      },
+        }
+      })(),
     },
   }
 }
