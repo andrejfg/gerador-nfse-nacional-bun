@@ -145,9 +145,14 @@ export function buildPreviewSchema(dps: InfDpsData): NfseSchema {
           ?? vals.pAliq
           ?? ((vals.vISSQN != null && vals.vISSQN > 0 && vBC > 0) ? vals.vISSQN / vBC : 0)
         const vISSQN   = vals.vISSQN ?? Math.round(vBC * aliquota * 100) / 100
-        const tpRet    = trib?.issqn?.tipoRetencaoIssqn
-        const vRetido  = (tpRet != null && tpRet !== TipoRetencaoIssqn.NaoRetido) ? vISSQN : 0
-        const vLiq     = vals.vLiq ?? (vals.vServico - vRetido - (vals.vDescIncondicionado ?? 0) - (vals.vDescCondicionado ?? 0) - (vals.vTotalRet ?? 0))
+        const tpRet        = trib?.issqn?.tipoRetencaoIssqn
+        const vRetido      = (tpRet != null && tpRet !== TipoRetencaoIssqn.NaoRetido) ? vISSQN : 0
+        const vTotalRetFed = (trib?.federal?.valorRetidoIrrf ?? 0)
+                           + (trib?.federal?.valorRetidoCsll  ?? 0)
+                           + (trib?.federal?.valorPis          ?? 0)
+                           + (trib?.federal?.valorCofins       ?? 0)
+        const vTotalRet    = vals.vTotalRet ?? vTotalRetFed
+        const vLiq         = vals.vLiq ?? (vals.vServico - vRetido - (vals.vDescIncondicionado ?? 0) - (vals.vDescCondicionado ?? 0) - vTotalRet)
         return {
         vServico:            vals.vServico,
         vBC,
@@ -156,7 +161,7 @@ export function buildPreviewSchema(dps: InfDpsData): NfseSchema {
         vLiq,
         vCalcBM:             0,
         vCalcDR:             0,
-        vTotalRet:           vals.vTotalRet ?? 0,
+        vTotalRet,
         vDescCondicionado:   vals.vDescCondicionado   ?? 0,
         vDescIncondicionado: vals.vDescIncondicionado ?? 0,
         IRRF:                trib?.federal?.valorRetidoIrrf  ?? 0,
