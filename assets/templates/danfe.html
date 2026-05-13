@@ -5,53 +5,80 @@
   <title>DANFSe - Documento Auxiliar da Nota Fiscal de Serviço Eletrônica</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: Arial, Helvetica, sans-serif; font-size: 9pt; color: #000; background: #fff; }
-    .danfe { width: 210mm; margin: 0 auto; padding: 5mm 8mm; position: relative; }
+    body { font-family: Arial, Helvetica, sans-serif; font-size: 8pt; color: #000; background: #fff; }
+    .danfe { width: 210mm; margin: 0 auto; padding: 3mm 5mm; position: relative; }
 
     .cancelada-ribbon {
       display: {{IS_CANCELADA}};
       position: absolute; top: 40mm; left: -10mm; right: -10mm;
       text-align: center; background: rgba(255,0,0,0.15); border: 3px solid #cc0000;
-      color: #cc0000; font-size: 28pt; font-weight: bold; padding: 4mm 0;
+      color: #cc0000; font-size: 28pt; font-weight: bold; padding: 3mm 0;
       transform: rotate(-8deg); z-index: 100; letter-spacing: 4px;
     }
 
-    .header { border: 1px solid #000; margin-bottom: 2mm; }
-    .header-top { display: flex; align-items: center; border-bottom: 1px solid #000; }
-    .header-logo { width: 40mm; padding: 2mm; text-align: center; border-right: 1px solid #000; font-weight: bold; font-size: 11pt; }
-    .header-title { flex: 1; text-align: center; padding: 2mm; }
-    .header-title h1 { font-size: 13pt; font-weight: bold; margin-bottom: 1mm; }
-    .header-title p { font-size: 7pt; color: #555; }
+    /* Header */
+    .header { border: 1px solid #000; margin-bottom: 1mm; display: flex; align-items: stretch; }
+    .header-logo { width: 24mm; padding: 1.5mm 2mm; text-align: center; border-right: 1px solid #000; display: flex; flex-direction: column; justify-content: center; }
+    .header-logo .logo-label { font-weight: bold; font-size: 12pt; }
+    .header-logo .logo-sub { font-size: 6pt; }
+    .header-center { flex: 1; text-align: center; padding: 1.5mm 2mm; border-right: 1px solid #000; display: flex; flex-direction: column; justify-content: center; }
+    .header-center h1 { font-size: 10pt; font-weight: bold; margin-bottom: 0.5mm; }
+    .header-center .header-subtitle { font-size: 8.5pt; font-weight: bold; color: #c00; }
+    .header-right { width: 38mm; padding: 1.5mm 2mm; font-size: 7pt; text-align: right; display: flex; flex-direction: column; justify-content: center; }
 
-    .chave-box { border: 1px solid #000; padding: 2mm; margin-bottom: 2mm; display: flex; gap: 4mm; align-items: flex-start; }
-    .chave-qr { min-width: 26mm; text-align: center; }
-    .chave-qr img { width: 26mm; height: 26mm; }
-    .chave-info { flex: 1; }
-    .chave-info .label { font-size: 7pt; color: #555; text-transform: uppercase; }
-    .chave-value { font-family: 'Courier New', monospace; font-size: 7.5pt; word-break: break-all; font-weight: bold; letter-spacing: 1px; }
-    .chave-meta { display: flex; gap: 8mm; margin-top: 2mm; font-size: 8pt; flex-wrap: wrap; }
+    /* Chave de Acesso */
+    .chave-box { border: 1px solid #000; padding: 1.5mm 2mm; margin-bottom: 1mm; display: flex; gap: 2mm; align-items: flex-start; }
+    .chave-info { flex: 1; min-width: 0; }
+    .chave-label { font-size: 6.5pt; font-weight: bold; color: #333; margin-bottom: 0.3mm; }
+    .chave-value { font-family: 'Courier New', monospace; font-size: 7pt; word-break: break-all; font-weight: bold; letter-spacing: 0.5px; margin-bottom: 1mm; }
+    .chave-meta { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5mm 2mm; }
+    .meta-item .label { font-size: 5.5pt; color: #555; font-weight: bold; text-transform: uppercase; }
+    .meta-item .value { font-size: 7.5pt; }
+    .chave-qr { width: 26mm; flex-shrink: 0; text-align: center; }
+    .chave-qr img { width: 24mm; height: 24mm; }
+    .qr-legend { font-size: 5.5pt; color: #555; margin-top: 0.5mm; margin-bottom: 1mm; line-height: 1.3; text-align: center; }
 
-    .section { border: 1px solid #000; margin-bottom: 2mm; }
-    .section-title { background: #e8e8e8; padding: 1mm 2mm; font-weight: bold; font-size: 7.5pt; border-bottom: 1px solid #000; text-transform: uppercase; letter-spacing: 1px; }
-    .section-body { padding: 2mm; }
+    /* Seções */
+    .section { border: 1px solid #000; margin-bottom: 1mm; }
+    .section-title { background: #e8e8e8; padding: 0.5mm 2mm; font-weight: bold; font-size: 7pt; border-bottom: 1px solid #000; text-transform: uppercase; letter-spacing: 0.3px; }
+    .section-body { padding: 1mm 2mm; }
 
-    .fields { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1mm 4mm; }
+    /* Grid de campos */
+    .fields { display: grid; gap: 0.5mm 3mm; }
+    .fields-2 { grid-template-columns: repeat(2, 1fr); }
     .fields-3 { grid-template-columns: repeat(3, 1fr); }
     .fields-4 { grid-template-columns: repeat(4, 1fr); }
     .field-full { grid-column: 1 / -1; }
-    .field .label { font-size: 7pt; color: #555; text-transform: uppercase; margin-bottom: 0.5mm; }
-    .field .value { font-size: 8.5pt; }
+    .field-2 { grid-column: span 2; }
+    .field .label { font-size: 6pt; font-weight: bold; color: #444; text-transform: uppercase; }
+    .field .value { font-size: 8pt; }
 
-    table.trib { width: 100%; border-collapse: collapse; font-size: 8pt; margin-top: 1mm; }
-    table.trib th { background: #e8e8e8; padding: 1mm 2mm; text-align: left; border: 1px solid #ccc; font-size: 7pt; text-transform: uppercase; }
-    table.trib td { padding: 1mm 2mm; border: 1px solid #ccc; text-align: right; }
-    table.trib td.left { text-align: left; }
+    /* Linha separadora */
+    .interm-row { border: 1px solid #000; margin-bottom: 1mm; text-align: center; padding: 0.8mm 2mm; font-size: 7.5pt; font-weight: bold; }
 
-    .total-box { background: #f5f5f5; border: 2px solid #000; padding: 2mm; text-align: right; margin-top: 2mm; }
-    .total-box .total-label { font-size: 8pt; text-transform: uppercase; color: #555; }
-    .total-box .total-value { font-size: 16pt; font-weight: bold; }
+    /* Serviço - discriminação */
+    .desc-box { padding: 1mm 2mm; background: #f9f9f9; border: 1px solid #ddd; min-height: 7mm; font-size: 8pt; margin-top: 0.5mm; }
 
-    .footer { border-top: 1px solid #ccc; margin-top: 3mm; padding-top: 2mm; font-size: 7pt; color: #888; text-align: center; }
+    /* Totais de Tributos */
+    .trib-totais { border: 1px solid #000; margin-bottom: 1mm; }
+    .trib-totais .trib-title { background: #e8e8e8; padding: 0.5mm 2mm; font-weight: bold; font-size: 7pt; border-bottom: 1px solid #000; text-transform: uppercase; }
+    .trib-totais .trib-body { display: grid; grid-template-columns: repeat(3, 1fr); }
+    .trib-col { padding: 1mm 2mm; border-right: 1px solid #ccc; text-align: center; }
+    .trib-col:last-child { border-right: none; }
+    .trib-col .label { font-size: 6.5pt; font-weight: bold; color: #444; text-transform: uppercase; }
+    .trib-col .value { font-size: 9pt; font-weight: bold; }
+
+    /* Valor Líquido destacado */
+    .vliq-box { background: #f5f5f5; padding: 0.5mm 2mm; text-align: right; }
+    .vliq-box .label { font-size: 6.5pt; font-weight: bold; color: #444; text-transform: uppercase; }
+    .vliq-box .value { font-size: 11pt; font-weight: bold; }
+
+    /* IBS/CBS */
+    table.trib { width: 100%; border-collapse: collapse; font-size: 7.5pt; }
+    table.trib th { background: #e8e8e8; padding: 0.5mm 1.5mm; text-align: left; border: 1px solid #ccc; font-size: 6pt; text-transform: uppercase; font-weight: bold; }
+    table.trib td { padding: 0.5mm 1.5mm; border: 1px solid #ccc; text-align: right; }
+
+    .footer { border-top: 1px solid #ccc; margin-top: 2mm; padding-top: 1mm; font-size: 6.5pt; color: #888; text-align: center; }
   </style>
 </head>
 <body>
@@ -59,76 +86,101 @@
 
   <div class="cancelada-ribbon">CANCELADA</div>
 
+  <!-- HEADER -->
   <div class="header">
-    <div class="header-top">
-      <div class="header-logo">DANFSe<br/>v1.0</div>
-      <div class="header-title">
-        <h1>DOCUMENTO AUXILIAR DA NOTA FISCAL DE SERVIÇO ELETRÔNICA</h1>
-        <p>Este documento é uma representação da NFS-e. Verifique a autenticidade pelo QR Code ou pela chave de acesso em nfse.gov.br</p>
-      </div>
+    <div class="header-logo">
+      <div class="logo-label">NFS<span style="color:#0066cc;">e</span></div>
+      <div class="logo-sub">Nota Fiscal de<br/>Serviço Eletrônico</div>
+    </div>
+    <div class="header-center">
+      <h1>DANFSe v1.0<br/>Documento Auxiliar da NFS-e</h1>
+      <div class="header-subtitle">NFS-e SEM VALIDADE JURÍDICA</div>
+    </div>
+    <div class="header-right">
+      <div style="font-weight:bold;">Município {{MUN_HEADER}}</div>
     </div>
   </div>
 
+  <!-- CHAVE DE ACESSO -->
   <div class="chave-box">
-    <div class="chave-qr">{{QRCODE_IMG}}<div style="font-size:6.5pt;margin-top:1mm;">Consulte a autenticidade</div></div>
     <div class="chave-info">
-      <div class="label">Chave de Acesso</div>
+      <div class="chave-label">Chave de Acesso da NFS-e</div>
       <div class="chave-value">{{CHAVE_NFSE}}</div>
       <div class="chave-meta">
-        <div><div class="label">Número NFS-e</div><div><strong>{{NFSE_NUMERO}}</strong></div></div>
-        <div><div class="label">Nº DFSe</div><div>{{NFSE_NDFSE}}</div></div>
-        <div><div class="label">Competência</div><div>{{NFSE_COMPETENCIA}}</div></div>
-        <div><div class="label">Emissão DPS</div><div>{{NFSE_DH_EMI}}</div></div>
-        <div><div class="label">Processamento</div><div>{{NFSE_DH_PROC}}</div></div>
-        <div><div class="label">DPS Nº / Série</div><div>{{DPS_NUMERO}} / {{DPS_SERIE}}</div></div>
+        <div class="meta-item"><div class="label">Número da NFS-e</div><div class="value"><strong>{{NFSE_NUMERO}}</strong></div></div>
+        <div class="meta-item"><div class="label">Competência da NFS-e</div><div class="value">{{NFSE_COMPETENCIA}}</div></div>
+        <div class="meta-item"><div class="label">Data e Hora da emissão da NFS-e</div><div class="value">{{NFSE_DH_PROC}}</div></div>
+        <div class="meta-item"><div class="label">Número da DPS</div><div class="value">{{DPS_NUMERO}}</div></div>
+        <div class="meta-item"><div class="label">Série da DPS</div><div class="value">{{DPS_SERIE}}</div></div>
+        <div class="meta-item"><div class="label">Data e Hora da emissão da DPS</div><div class="value">{{NFSE_DH_EMI}}</div></div>
       </div>
     </div>
+    <div class="chave-qr">
+      {{QRCODE_IMG}}
+    </div>
   </div>
+  <div class="qr-legend">A autenticidade desta NFS-e pode ser verificada pela leitura deste código QR ou pela consulta da chave de acesso no portal nacional da NFS-e</div>
 
+  <!-- EMITENTE DA NFS-e -->
   <div class="section">
-    <div class="section-title">Prestador do Serviço (Emitente)</div>
+    <div class="section-title">Emitente da NFS-e — Prestador do Serviço</div>
     <div class="section-body">
-      <div class="fields fields-4">
-        <div class="field"><div class="label">CNPJ/CPF</div><div class="value">{{PREST_CNPJ}}</div></div>
+      <div class="fields fields-4" style="margin-bottom:0.5mm;">
+        <div class="field"><div class="label">CNPJ / CPF / NIF</div><div class="value">{{PREST_CNPJ}}</div></div>
         <div class="field"><div class="label">Inscrição Municipal</div><div class="value">{{PREST_IM}}</div></div>
-        <div class="field"><div class="label">Simples Nacional</div><div class="value">{{PREST_SIMPNAC}}</div></div>
-        <div class="field"><div class="label">Regime Especial</div><div class="value">{{PREST_REGIME}}</div></div>
-        <div class="field field-full"><div class="label">Razão Social / Nome</div><div class="value" style="font-weight:bold;font-size:10pt;">{{PREST_XNOME}}</div></div>
-        <div class="field field-full"><div class="label">Nome Fantasia</div><div class="value">{{PREST_XFANT}}</div></div>
-        <div class="field field-full"><div class="label">Endereço</div><div class="value">{{PREST_ENDERECO}}</div></div>
         <div class="field"><div class="label">Telefone</div><div class="value">{{PREST_FONE}}</div></div>
         <div class="field"><div class="label">E-mail</div><div class="value">{{PREST_EMAIL}}</div></div>
+      </div>
+      <div class="fields fields-4" style="margin-bottom:0.5mm;">
+        <div class="field field-full"><div class="label">Nome / Nome Empresarial</div><div class="value" style="font-weight:bold;font-size:10pt;">{{PREST_XNOME}}</div></div>
+      </div>
+      <div class="fields fields-4" style="margin-bottom:0.5mm;">
+        <div class="field field-2"><div class="label">Endereço</div><div class="value">{{PREST_ENDERECO}}</div></div>
+        <div class="field"><div class="label">Município</div><div class="value">{{PREST_MUNICIPIO}}</div></div>
+        <div class="field"><div class="label">CEP</div><div class="value">{{PREST_CEP}}</div></div>
+      </div>
+      <div class="fields fields-2">
+        <div class="field"><div class="label">Simples Nacional na Data de Competência</div><div class="value">{{PREST_SIMPNAC}}</div></div>
+        <div class="field"><div class="label">Regime de Apuração Tributária pelo SN</div><div class="value">{{PREST_REGIME}}</div></div>
       </div>
     </div>
   </div>
 
   {{TOMADOR_IDENTIFIED:BEGIN}}
   <div class="section">
-    <div class="section-title">Tomador do Serviço (Destinatário)</div>
+    <div class="section-title">Tomador do Serviço</div>
     <div class="section-body">
-      <div class="fields fields-3">
-        <div class="field"><div class="label">CNPJ/CPF</div><div class="value">{{TOMA_CNPJ}}</div></div>
+      <div class="fields fields-3" style="margin-bottom:0.5mm;">
+        <div class="field"><div class="label">CNPJ / CPF / NIF</div><div class="value">{{TOMA_CNPJ}}</div></div>
         <div class="field"><div class="label">Inscrição Municipal</div><div class="value">{{TOMA_IM}}</div></div>
         <div class="field"><div class="label">Telefone</div><div class="value">{{TOMA_FONE}}</div></div>
-        <div class="field field-full"><div class="label">Razão Social / Nome</div><div class="value" style="font-weight:bold;">{{TOMA_XNOME}}</div></div>
-        <div class="field field-full"><div class="label">Endereço</div><div class="value">{{TOMA_ENDERECO}}</div></div>
+        <div class="field field-full"><div class="label">Nome / Nome Empresarial</div><div class="value" style="font-weight:bold;">{{TOMA_XNOME}}</div></div>
         <div class="field"><div class="label">E-mail</div><div class="value">{{TOMA_EMAIL}}</div></div>
+      </div>
+      <div class="fields fields-4">
+        <div class="field field-2"><div class="label">Endereço</div><div class="value">{{TOMA_ENDERECO}}</div></div>
+        <div class="field"><div class="label">Município</div><div class="value">{{TOMA_MUNICIPIO}}</div></div>
+        <div class="field"><div class="label">CEP</div><div class="value">{{TOMA_CEP}}</div></div>
       </div>
     </div>
   </div>
   {{TOMADOR_IDENTIFIED:END}}
 
-  {{INTERMEDIARIO_IDENTIFIED:BEGIN}}
+  <!-- INTERMEDIÁRIO -->
+  {{INTERM_DADOS_IDENTIFIED:BEGIN}}
   <div class="section">
     <div class="section-title">Intermediário do Serviço</div>
     <div class="section-body">
-      <div class="fields">
-        <div class="field"><div class="label">CNPJ/CPF</div><div class="value">{{INTERM_CNPJ}}</div></div>
-        <div class="field"><div class="label">Razão Social / Nome</div><div class="value">{{INTERM_XNOME}}</div></div>
+      <div class="fields fields-2">
+        <div class="field"><div class="label">CNPJ / CPF / NIF</div><div class="value">{{INTERM_CNPJ}}</div></div>
+        <div class="field"><div class="label">Nome / Nome Empresarial</div><div class="value">{{INTERM_XNOME}}</div></div>
       </div>
     </div>
   </div>
-  {{INTERMEDIARIO_IDENTIFIED:END}}
+  {{INTERM_DADOS_IDENTIFIED:END}}
+  {{INTERM_NAO_IDENTIFICADO:BEGIN}}
+  <div class="interm-row">INTERMEDIÁRIO DO SERVIÇO NÃO IDENTIFICADO NA NFS-e</div>
+  {{INTERM_NAO_IDENTIFICADO:END}}
 
   {{SUBSTITUICAO_IDENTIFIED:BEGIN}}
   <div class="section">
@@ -143,51 +195,68 @@
   </div>
   {{SUBSTITUICAO_IDENTIFIED:END}}
 
+  <!-- SERVIÇO PRESTADO -->
   <div class="section">
-    <div class="section-title">Descrição do Serviço</div>
+    <div class="section-title">Serviço Prestado</div>
     <div class="section-body">
-      <div class="fields fields-4" style="margin-bottom:2mm;">
-        <div class="field"><div class="label">Cód. NBS Nacional</div><div class="value">{{SERVICO_XNS}}</div></div>
-        <div class="field"><div class="label">Cód. Municipal</div><div class="value">{{SERVICO_XCM}}</div></div>
-        <div class="field"><div class="label">Local Prestação</div><div class="value">{{SERVICO_XCLES}}</div></div>
-        <div class="field"><div class="label">País</div><div class="value">{{SERVICO_XPA}}</div></div>
+      <div class="fields fields-4" style="margin-bottom:0.5mm;">
+        <div class="field field-2"><div class="label">Código de Tributação Nacional</div><div class="value">{{SERVICO_CTRIBNAC}}</div></div>
+        <div class="field"><div class="label">Código de Tributação Municipal</div><div class="value">{{SERVICO_XCM}}</div></div>
+        <div class="field"><div class="label">Local da Prestação</div><div class="value">{{SERVICO_XCLES}}</div></div>
+        <div class="field"><div class="label">País da Prestação</div><div class="value">{{SERVICO_XPA}}</div></div>
       </div>
       <div class="field field-full">
-        <div class="label">Discriminação do Serviço</div>
-        <div class="value" style="margin-top:1mm;padding:2mm;background:#f9f9f9;border:1px solid #ddd;min-height:12mm;">{{SERVICO_DESCRICAO}}</div>
+        <div class="label">Descrição do Serviço</div>
+        <div class="desc-box">{{SERVICO_DESCRICAO}}</div>
       </div>
     </div>
   </div>
 
+  <!-- TRIBUTAÇÃO MUNICIPAL -->
   <div class="section">
-    <div class="section-title">Tributação Municipal – ISSQN</div>
+    <div class="section-title">Tributação Municipal</div>
     <div class="section-body">
-      <div class="fields fields-4" style="margin-bottom:2mm;">
-        <div class="field"><div class="label">Tributação ISSQN</div><div class="value">{{ISSQN_TPIMUNICIPAL}}</div></div>
-        <div class="field"><div class="label">Município Incidência</div><div class="value">{{ISSQN_CMUNICIPIO}}</div></div>
-        <div class="field"><div class="label">Retenção ISSQN</div><div class="value">{{ISSQN_RET}}</div></div>
+      <div class="fields fields-4" style="margin-bottom:0.5mm;">
+        <div class="field"><div class="label">Tributação do ISSQN</div><div class="value">{{ISSQN_TPIMUNICIPAL}}</div></div>
+        <div class="field"><div class="label">País Resultado da Prestação do Serviço</div><div class="value">{{ISSQN_CPAISRESULT}}</div></div>
+        <div class="field"><div class="label">Município de Incidência do ISSQN</div><div class="value">{{ISSQN_CMUNICIPIO}}</div></div>
+        <div class="field"><div class="label">Regime Especial de Tributação</div><div class="value">{{ISSQN_REGESPECIA}}</div></div>
+      </div>
+      <div class="fields fields-4" style="margin-bottom:0.5mm;">
+        <div class="field"><div class="label">Tipo de Imunidade</div><div class="value">{{ISSQN_TPIMUNIDADE}}</div></div>
+        <div class="field"><div class="label">Suspensão da Exigibilidade do ISSQN</div><div class="value">{{ISSQN_TPSUSP_TEXT}}</div></div>
+        <div class="field"><div class="label">Número Processo Suspensão</div><div class="value">{{ISSQN_NPROCESSO}}</div></div>
         <div class="field"><div class="label">Benefício Municipal</div><div class="value">{{ISSQN_NBM}}</div></div>
       </div>
-      <table class="trib">
-        <thead><tr>
-          <th>Base Cálculo</th><th>Alíquota</th><th>ISSQN Calculado</th><th>Total Retido</th><th>Valor Líquido</th>
-        </tr></thead>
-        <tbody><tr>
-          <td>{{ISSQN_VBASE}}</td><td>{{ISSQN_PALIQ}}</td><td>{{ISSQN_VCALCBM}}</td><td>{{ISSQN_VTOTALRET}}</td><td>{{ISSQN_VLIQ}}</td>
-        </tr></tbody>
-      </table>
+      <div class="fields fields-4" style="margin-bottom:0.5mm;">
+        <div class="field"><div class="label">Valor do Serviço</div><div class="value">{{ISSQN_VSERVICO}}</div></div>
+        <div class="field"><div class="label">Desconto Incondicionado</div><div class="value">{{ISSQN_VDESCINCOND}}</div></div>
+        <div class="field"><div class="label">Total Deduções/Reduções</div><div class="value">{{ISSQN_VDEDUCOES}}</div></div>
+        <div class="field"><div class="label">Cálculo do BM</div><div class="value">-</div></div>
+      </div>
+      <div class="fields fields-4">
+        <div class="field"><div class="label">BC ISSQN</div><div class="value">{{ISSQN_VBASE}}</div></div>
+        <div class="field"><div class="label">Alíquota Aplicada</div><div class="value">{{ISSQN_PALIQ}}</div></div>
+        <div class="field"><div class="label">Retenção do ISSQN</div><div class="value">{{ISSQN_RET}}</div></div>
+        <div class="field"><div class="label">ISSQN Apurado</div><div class="value" style="font-weight:bold;">{{ISSQN_VCALCBM}}</div></div>
+      </div>
     </div>
   </div>
 
+  <!-- TRIBUTAÇÃO FEDERAL -->
   <div class="section">
-    <div class="section-title">Retenções Federais</div>
+    <div class="section-title">Tributação Federal</div>
     <div class="section-body">
-      <table class="trib">
-        <thead><tr><th>IRRF</th><th>Contrib. Patronal</th><th>Contribuições Sociais Retidas</th><th>Total Federal</th></tr></thead>
-        <tbody><tr>
-          <td>{{IRRF_VALUE}}</td><td>{{CP_VALUE}}</td><td>{{CONTRIB_SOCIAIS}}</td><td><strong>{{FED_TOTAL}}</strong></td>
-        </tr></tbody>
-      </table>
+      <div class="fields fields-4" style="margin-bottom:0.5mm;">
+        <div class="field"><div class="label">IRRF</div><div class="value">{{IRRF_VALUE}}</div></div>
+        <div class="field"><div class="label">Contribuição Previdenciária - Retida</div><div class="value">{{FED_CONTRIB_PREV}}</div></div>
+        <div class="field"><div class="label">Contribuições Sociais - Retidas</div><div class="value">{{FED_CONTRIB_SOC}}</div></div>
+        <div class="field"><div class="label">Descrição Contrib. Sociais - Retidas</div><div class="value">{{FED_CONTRIB_SOC_DESC}}</div></div>
+      </div>
+      <div class="fields fields-4">
+        <div class="field"><div class="label">PIS - Débito Apuração Própria</div><div class="value">{{FED_PIS_PROPRIO}}</div></div>
+        <div class="field"><div class="label">COFINS - Débito Apuração Própria</div><div class="value">{{FED_COFINS_PROPRIO}}</div></div>
+      </div>
     </div>
   </div>
 
@@ -208,43 +277,60 @@
   </div>
   {{IBSCBS_IDENTIFIED:END}}
 
+  <!-- VALOR TOTAL DA NFS-E -->
   <div class="section">
-    <div class="section-title">Resumo Financeiro</div>
+    <div class="section-title">Valor Total da NFS-e</div>
     <div class="section-body">
-      <div class="fields fields-4">
-        <div class="field"><div class="label">Valor Bruto</div><div class="value">{{FINANCEIRO_VSERVICO}}</div></div>
-        <div class="field"><div class="label">Desc. Condicionado</div><div class="value">{{FINANCEIRO_VDESCCONDICIONAL}}</div></div>
-        <div class="field"><div class="label">Desc. Incondicionado</div><div class="value">{{FINANCEIRO_VDESCONTOINCOND}}</div></div>
-        <div class="field"><div class="label">Dedução/Redução</div><div class="value">{{FINANCEIRO_VDEDUCAO}}</div></div>
+      <div class="fields fields-4" style="margin-bottom:0.5mm;">
+        <div class="field"><div class="label">Valor do Serviço</div><div class="value">{{FINANCEIRO_VSERVICO}}</div></div>
+        <div class="field"><div class="label">Desconto Condicionado</div><div class="value">{{FINANCEIRO_VDESCCONDICIONAL}}</div></div>
+        <div class="field"><div class="label">Desconto Incondicionado</div><div class="value">{{FINANCEIRO_VDESCONTOINCOND}}</div></div>
+        <div class="field"><div class="label">ISSQN Retido</div><div class="value">{{FINANCEIRO_VISSQN_RETIDO}}</div></div>
       </div>
-      <div class="total-box">
-        <div class="total-label">Valor Total da NFS-e (Líquido)</div>
-        <div class="total-value">{{FINANCEIRO_VLIQ}}</div>
+      <div class="fields fields-4" style="margin-bottom:0.5mm;">
+        <div class="field"><div class="label">Total das Retenções Federais</div><div class="value">{{FINANCEIRO_TOTALRET}}</div></div>
+        <div class="field"><div class="label">PIS/COFINS - Débito Apur. Própria</div><div class="value">{{FINANCEIRO_PISCOFINS_PROPRIO}}</div></div>
+        <div class="field"></div>
+        <div class="field vliq-box">
+          <div class="label">Valor Líquido da NFS-e</div>
+          <div class="value">{{FINANCEIRO_VLIQ}}</div>
+        </div>
       </div>
     </div>
   </div>
 
+  <!-- TOTAIS APROXIMADOS DOS TRIBUTOS -->
+  <div class="trib-totais">
+    <div class="trib-title">Totais Aproximados dos Tributos</div>
+    <div class="trib-body">
+      <div class="trib-col"><div class="label">Federais</div><div class="value">{{TRIB_PCT_FED}}</div></div>
+      <div class="trib-col"><div class="label">Estaduais</div><div class="value">{{TRIB_PCT_EST}}</div></div>
+      <div class="trib-col"><div class="label">Municipais</div><div class="value">{{TRIB_PCT_MUN}}</div></div>
+    </div>
+  </div>
+
+  <!-- INFORMAÇÕES COMPLEMENTARES -->
   <div class="section">
     <div class="section-title">Informações Complementares</div>
-    <div class="section-body" style="min-height:10mm;font-size:8pt;">
-      <div class="fields fields-3" style="margin-bottom:2mm;">
+    <div class="section-body" style="min-height:8mm;font-size:8pt;">
+      <div class="fields fields-3" style="margin-bottom:0.5mm;">
+        <div class="field"><div class="label">NBS</div><div class="value">{{COMPL_NBS}}</div></div>
         <div class="field"><div class="label">Doc. Técnico</div><div class="value">{{COMPLEMENTO_IDDOCTEC}}</div></div>
-        <div class="field"><div class="label">Doc. Referência</div><div class="value">{{COMPLEMENTO_DOCREF}}</div></div>
         <div class="field"><div class="label">Pedido</div><div class="value">{{COMPLEMENTO_XPED}}</div></div>
       </div>
-      <div class="field field-full">
+      <div class="field field-full" style="margin-bottom:1mm;">
         <div class="label">Informações Adicionais</div>
-        <div class="value" style="margin-top:1mm;padding:2mm;background:#f9f9f9;border:1px solid #ddd;min-height:8mm;">{{COMPLEMENTO_XINFADINAL}}</div>
+        <div class="desc-box" style="min-height:6mm;">{{COMPLEMENTO_XINFADINAL}}</div>
       </div>
-      <div class="field field-full" style="margin-top:1mm;">
+      <div class="field field-full">
         <div class="label">Informações da Administração Tributária Municipal</div>
-        <div class="value" style="margin-top:1mm;padding:2mm;background:#f9f9f9;border:1px solid #ddd;min-height:4mm;">{{COMPLEMENTO_XOUTINF}}</div>
+        <div class="desc-box" style="min-height:4mm;">{{COMPLEMENTO_XOUTINF}}</div>
       </div>
     </div>
   </div>
 
   <div class="footer">
-    <p>DANFSe – Documento Auxiliar da Nota Fiscal de Serviço Eletrônica | gerador-nfse-nacional-bun</p>
+    <p>DANFSe – Documento Auxiliar da Nota Fiscal de Serviço Eletrônica</p>
     <p>Este documento não tem valor fiscal. Verifique a autenticidade em <strong>nfse.gov.br</strong> informando a chave de acesso.</p>
   </div>
 
