@@ -39,14 +39,18 @@ export enum CodigoStatus {
   Substituido = 3,
 }
 
+/**
+ * Situação tributária do ISSQN (`tribISSQN`) — XSD `TSTribISSQN` v1.01.
+ *
+ * O XSD aceita SOMENTE 1..4. Não existe "Isento" nem "Não Tributada SN":
+ * o que coloquialmente se chama de "isenção" de ISS é, no modelo da NFS-e
+ * nacional, uma **Imunidade** (`Imunidade = 2`), detalhada por `tpImunidade`.
+ */
 export enum TributacaoIssqn {
-  TributadaMunicipioPrestador = 1,
-  TributadaMunicipioTomador = 2,
-  Isenta = 3,
-  NaoIncidente = 4,
-  Imune = 5,
-  Exportacao = 6,
-  NaoTributadaSimplesNacional = 7,
+  OperacaoTributavel = 1,
+  Imunidade = 2,
+  ExportacaoServico = 3,
+  NaoIncidencia = 4,
 }
 
 export enum TipoRetencaoIssqn {

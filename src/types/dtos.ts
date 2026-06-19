@@ -248,14 +248,14 @@ export interface ServicoData {
  */
 export interface IssqnData {
   /**
-   * Situação tributária do ISSQN (`tribISSQN`):
-   * `1` Tributado no município do prestador,
-   * `2` Tributado no município do tomador,
-   * `3` Isento, `4` Não incidente, `5` Imune,
-   * `6` Exportação, `7` Não tributado (Simples Nacional).
+   * Situação tributária do ISSQN (`tribISSQN`), conforme XSD `TSTribISSQN` v1.01:
+   * `1` Operação tributável, `2` Imunidade,
+   * `3` Exportação de serviço, `4` Não Incidência.
+   * Não existe valor para "isento": a isenção coloquial de ISS é modelada
+   * como Imunidade (`2`) + `tipoImunidade`.
    */
   tributacaoIssqn?: TributacaoIssqn
-  /** Tipo de imunidade do prestador (`tpImun`), quando `tributacaoIssqn = 5`. */
+  /** Tipo de imunidade do ISSQN (`tpImunidade`), obrigatório quando `tributacaoIssqn = 2` (Imunidade). */
   tipoImunidade?: TipoImunidade
   /** Tipo de suspensão da exigibilidade do ISSQN (`tpSuspensao`). */
   tipoSuspensao?: TipoSuspensao

@@ -8,7 +8,8 @@
 import { z } from 'zod'
 import { DpsSchema } from './dps-schema.js'
 import { EmitenteDPS } from '../types/enums.js'
-import type { DpsData, InfDpsData, ValoresServicoData, ServicoData, TomadorData } from '../types/dtos.js'
+import type { DpsData, InfDpsData, ValoresServicoData, ServicoData, TomadorData, TributacaoData } from '../types/dtos.js'
+import { TributacaoIssqn } from '../types/enums.js'
 
 /** Resultado da validação de um DPS. */
 export interface ValidationResult {
@@ -66,6 +67,7 @@ export function validateDps(dps: DpsData): ValidationResult {
   validateTomador(infDps.tomador, errors)
   validateValores(infDps.valores, errors)
   validateServico(infDps.servico, errors)
+  validateTributacao(infDps.tributacao, errors)
 
   return errors.length > 0
     ? { isValid: false, errors }
@@ -126,6 +128,20 @@ function validateValores(valores: ValoresServicoData, errors: string[]): void {
   if (vServ < vDescIncond + vDescCond) {
     errors.push(
       'Regra 303: O valor do serviço deve ser maior ou igual ao somatório dos descontos incondicionado e condicionado.',
+    )
+  }
+}
+
+function validateTributacao(tributacao: TributacaoData | undefined, errors: string[]): void {
+  const issqn = tributacao?.issqn
+  if (!issqn) return
+
+  // XSD TCTribMunicipal: tpImunidade "somente para o caso de Imunidade".
+  // Quando tribISSQN = 2 (Imunidade), tipoImunidade é obrigatório.
+  if (issqn.tributacaoIssqn === TributacaoIssqn.Imunidade && issqn.tipoImunidade === undefined) {
+    errors.push(
+      'tributacao.issqn.tipoImunidade é obrigatório quando tributacaoIssqn = 2 (Imunidade) — ' +
+      'informe o fundamento da imunidade (TipoImunidade, 0..5).',
     )
   }
 }

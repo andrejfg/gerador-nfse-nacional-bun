@@ -184,7 +184,7 @@ const dps: DpsData = {
 
     tributacao: {
       issqn: {
-        tributacaoIssqn: TributacaoIssqn.TributadaMunicipioPrestador,
+        tributacaoIssqn: TributacaoIssqn.OperacaoTributavel,
         tipoRetencaoIssqn: TipoRetencaoIssqn.NaoRetido,
       },
       federal: { cstPisCofins: '00' },
@@ -390,7 +390,7 @@ parseNfseXml(xml)              // NfseSchema
 import {
   TipoAmbiente,             // Producao = 1, Homologacao = 2
   EmitenteDPS,              // Prestador = 1, Tomador = 2, Intermediario = 3
-  TributacaoIssqn,          // TributadaMunicipioPrestador = 1, ...
+  TributacaoIssqn,          // OperacaoTributavel = 1, Imunidade = 2, ExportacaoServico = 3, NaoIncidencia = 4
   TipoRetencaoIssqn,        // NaoRetido = 1, RetidoTomador = 2, RetidoIntermediario = 3
   OpcaoSimplesNacional,     // NaoOptante = 1, Optante = 2
   RegimeEspecialTributacao,

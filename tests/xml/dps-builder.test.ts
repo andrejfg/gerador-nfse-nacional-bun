@@ -4,6 +4,7 @@ import {
   TipoAmbiente,
   EmitenteDPS,
   TributacaoIssqn,
+  TipoImunidade,
   TipoRetencaoIssqn,
   OpcaoSimplesNacional,
 } from '../../src/types/enums.js'
@@ -37,7 +38,7 @@ function makeDps(overrides: Partial<DpsData['infDps']> = {}): DpsData {
       valores: { vServico: 1000.00, vBC: 1000.00, vISSQN: 50.00, vLiq: 950.00 },
       tributacao: {
         issqn: {
-          tributacaoIssqn: TributacaoIssqn.TributadaMunicipioPrestador,
+          tributacaoIssqn: TributacaoIssqn.OperacaoTributavel,
           aliquota: 0.05,
           tipoRetencaoIssqn: TipoRetencaoIssqn.NaoRetido,
           cMunFG: '3106200',
@@ -108,11 +109,29 @@ describe('buildDpsXml', () => {
     expect(buildDpsXml(makeDps())).toContain('<pAliq>5.00</pAliq>')
   })
 
+  test('serviço imune: tribISSQN=2 e tpImunidade na ordem do XSD', () => {
+    const xml = buildDpsXml(makeDps({
+      tributacao: {
+        issqn: {
+          tributacaoIssqn: TributacaoIssqn.Imunidade,
+          tipoImunidade: TipoImunidade.EntidadesAssistenciais,
+          tipoRetencaoIssqn: TipoRetencaoIssqn.NaoRetido,
+        },
+      },
+    }))
+    expect(xml).toContain('<tribISSQN>2</tribISSQN>')
+    expect(xml).toContain('<tpImunidade>5</tpImunidade>')
+    // ordem TCTribMunicipal: tribISSQN → tpImunidade → tpRetISSQN
+    expect(xml).toMatch(/<tribISSQN>2<\/tribISSQN><tpImunidade>5<\/tpImunidade><tpRetISSQN>1<\/tpRetISSQN>/)
+    // operação imune não apura ISS
+    expect(xml).not.toContain('<pAliq>')
+  })
+
   test('alíquotas PIS/COFINS convertidas de decimal para percentual', () => {
     const dps = makeDps({
       tributacao: {
         issqn: {
-          tributacaoIssqn: TributacaoIssqn.TributadaMunicipioPrestador,
+          tributacaoIssqn: TributacaoIssqn.OperacaoTributavel,
           aliquota: 0.05,
           tipoRetencaoIssqn: TipoRetencaoIssqn.NaoRetido,
         },

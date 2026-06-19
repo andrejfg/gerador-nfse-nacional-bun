@@ -125,7 +125,7 @@ if (chaveExistente) {
 
       tributacao: {
         issqn: {
-          tributacaoIssqn: TributacaoIssqn.TributadaMunicipioPrestador,
+          tributacaoIssqn: TributacaoIssqn.OperacaoTributavel,
           tipoRetencaoIssqn: TipoRetencaoIssqn.NaoRetido,
         },
         federal: { cstPisCofins: '00' },
