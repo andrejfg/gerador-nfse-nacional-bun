@@ -166,6 +166,17 @@ function applyConditionals(html: string, flags: Record<string, boolean>): string
   return result
 }
 
+/**
+ * Monta a URL de consulta pública embutida no QR Code da DANF-Se.
+ * O host varia por ambiente: produção (`tpAmb === 1`) usa nfse.gov.br;
+ * homologação (produção restrita) usa producaorestrita.nfse.gov.br.
+ */
+export function buildQrUrl(chNFSe: string, tpAmb?: number | string): string {
+  const isProd = String(tpAmb ?? 1) === '1'
+  const host = isProd ? 'https://www.nfse.gov.br' : 'https://www.producaorestrita.nfse.gov.br'
+  return chNFSe ? `${host}/ConsultaPublica/?tpc=1&chave=${chNFSe}` : host
+}
+
 export async function renderDanfseHtml(
   schema: NfseSchema,
   isCancelled = false,
@@ -194,7 +205,7 @@ export async function renderDanfseHtml(
   const ibs    = inf.IBSCBS
 
   const chNFSe = inf.chNFSe ?? ''
-  const qrUrl = chNFSe ? `https://www.nfse.gov.br/ConsultaPublica/?tpc=1&chave=${chNFSe}` : 'https://www.nfse.gov.br'
+  const qrUrl = buildQrUrl(chNFSe, dps?.tpAmb)
   const qrImg = await QRCode.toDataURL(qrUrl, { width: 120, margin: 0 }).catch(() => '')
 
   // Resolve município do emitente e do local de prestação

@@ -100,7 +100,7 @@ const dps: DpsData = {
 
     tributacao: {
       issqn: {
-        tributacaoIssqn: TributacaoIssqn.TributadaMunicipioPrestador,
+        tributacaoIssqn: TributacaoIssqn.OperacaoTributavel,
         tipoRetencaoIssqn: TipoRetencaoIssqn.NaoRetido,
       },
       federal: {

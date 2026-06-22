@@ -184,7 +184,7 @@ const dps: DpsData = {
 
     tributacao: {
       issqn: {
-        tributacaoIssqn: TributacaoIssqn.TributadaMunicipioPrestador,
+        tributacaoIssqn: TributacaoIssqn.OperacaoTributavel,
         tipoRetencaoIssqn: TipoRetencaoIssqn.NaoRetido,
       },
       federal: { cstPisCofins: '00' },
@@ -349,6 +349,9 @@ writeFileSync('preview.pdf', preview.pdfBytes!)
 | `saveToFile(xml, path, isGzip?, opts?)` | Gera o PDF e salva diretamente em arquivo. |
 | `previewFromDps(dps, opts?)` | Gera prévia com marca d'água **antes** da emissão. |
 
+> **Personalização da DANF-Se** (template HTML próprio, placeholders, marca
+> d'água): veja [docs/danfe-personalizada.md](docs/danfe-personalizada.md).
+
 **`DanfeGenerateOptions`**
 
 ```typescript
@@ -390,7 +393,7 @@ parseNfseXml(xml)              // NfseSchema
 import {
   TipoAmbiente,             // Producao = 1, Homologacao = 2
   EmitenteDPS,              // Prestador = 1, Tomador = 2, Intermediario = 3
-  TributacaoIssqn,          // TributadaMunicipioPrestador = 1, ...
+  TributacaoIssqn,          // OperacaoTributavel = 1, Imunidade = 2, ExportacaoServico = 3, NaoIncidencia = 4
   TipoRetencaoIssqn,        // NaoRetido = 1, RetidoTomador = 2, RetidoIntermediario = 3
   OpcaoSimplesNacional,     // NaoOptante = 1, Optante = 2
   RegimeEspecialTributacao,

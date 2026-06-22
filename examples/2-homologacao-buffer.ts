@@ -117,7 +117,7 @@ const dps: DpsData = {
 
     tributacao: {
       issqn: {
-        tributacaoIssqn: TributacaoIssqn.TributadaMunicipioPrestador,
+        tributacaoIssqn: TributacaoIssqn.OperacaoTributavel,
         // aliquota omitida: município ativo no SNNFSe com opSimpNac=1 — sistema parametriza (E0617)
         tipoRetencaoIssqn: TipoRetencaoIssqn.NaoRetido,
       },

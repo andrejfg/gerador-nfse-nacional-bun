@@ -73,7 +73,7 @@ const DPS_VALIDO: DpsData = {
     valores: { vServico: 1000 },
     tributacao: {
       issqn: {
-        tributacaoIssqn: TributacaoIssqn.TributadaMunicipioPrestador,
+        tributacaoIssqn: TributacaoIssqn.OperacaoTributavel,
         tipoRetencaoIssqn: TipoRetencaoIssqn.NaoRetido,
       },
     },
@@ -289,7 +289,7 @@ const DPS_PREVIEW_E2E: InfDpsData = {
   valores: { vServico: 2500, vBC: 2500, vISSQN: 125 },
   tributacao: {
     issqn: {
-      tributacaoIssqn: TributacaoIssqn.TributadaMunicipioPrestador,
+      tributacaoIssqn: TributacaoIssqn.OperacaoTributavel,
       tipoRetencaoIssqn: TipoRetencaoIssqn.NaoRetido,
       aliquota: 0.05,
     },

@@ -263,6 +263,57 @@ describe('DpsValidator — serviço', () => {
 })
 
 // ---------------------------------------------------------------------------
+// Tributação ISSQN — Imunidade
+// ---------------------------------------------------------------------------
+
+describe('DpsValidator — ISSQN imunidade', () => {
+  test('Imunidade (tribISSQN=2) sem tipoImunidade falha', () => {
+    const result = validateDps(makeDps({
+      tributacao: {
+        issqn: {
+          tributacaoIssqn: 2, // Imunidade
+          tipoRetencaoIssqn: 1,
+        },
+      },
+    }))
+    expect(result.isValid).toBe(false)
+    expect(result.errors.some(e => e.includes('tipoImunidade'))).toBe(true)
+  })
+
+  test('Imunidade (tribISSQN=2) com tipoImunidade é válida', () => {
+    const result = validateDps(makeDps({
+      tributacao: {
+        issqn: {
+          tributacaoIssqn: 2,
+          tipoImunidade: 5, // EntidadesAssistenciais
+          tipoRetencaoIssqn: 1,
+        },
+      },
+    }))
+    expect(result.isValid).toBe(true)
+  })
+
+  test('Operação tributável (tribISSQN=1) sem tipoImunidade é válida', () => {
+    const result = validateDps(makeDps({
+      tributacao: {
+        issqn: { tributacaoIssqn: 1, tipoRetencaoIssqn: 1 },
+      },
+    }))
+    expect(result.isValid).toBe(true)
+  })
+
+  test('Exportação de serviço (tribISSQN=3) é rejeitada (cPaisResult não suportado)', () => {
+    const result = validateDps(makeDps({
+      tributacao: {
+        issqn: { tributacaoIssqn: 3, tipoRetencaoIssqn: 1 },
+      },
+    }))
+    expect(result.isValid).toBe(false)
+    expect(result.errors.some(e => e.includes('cPaisResult'))).toBe(true)
+  })
+})
+
+// ---------------------------------------------------------------------------
 // Zod schema — validação estrutural
 // ---------------------------------------------------------------------------
 

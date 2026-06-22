@@ -225,14 +225,56 @@ Localização no XML: elemento `trib` dentro de `infDPS`.
 
 | Campo | Tipo | XML | Descrição |
 |-------|------|-----|-----------|
-| `tributacaoIssqn` | `TributacaoIssqn` | `tribISSQN` | Situação tributária: 1 Prestador · 2 Tomador · 3 Isento · 4 Não incidente · 5 Imune · 6 Exportação · 7 Simples Nacional. |
-| `tipoImunidade` | `TipoImunidade` | `tpImun` | Fundamento da imunidade (quando `tributacaoIssqn = 5`). |
+| `tributacaoIssqn` | `TributacaoIssqn` | `tribISSQN` | Situação tributária (XSD `TSTribISSQN`): 1 Operação tributável · 2 Imunidade · 3 Exportação de serviço · 4 Não Incidência. Não existe "isento" — ver seção abaixo. |
+| `tipoImunidade` | `TipoImunidade` | `tpImunidade` | Fundamento da imunidade, obrigatório quando `tributacaoIssqn = 2` (Imunidade). |
 | `tipoSuspensao` | `TipoSuspensao` | `tpSuspensao` | Tipo de suspensão judicial ou administrativa. |
 | `numeroProcessoSuspensao` | `string` | `nProcessoSuspensao` | Número do processo de suspensão. |
 | `tipoRetencaoIssqn` | `TipoRetencaoIssqn` | `tpRetISSQN` | 1 Não retido · 2 Retido pelo tomador · 3 Retido pelo intermediário. |
 | `aliquota` | `number` | `pAliq` | Alíquota em decimal. Limites: 2% (mín.) a 5% (máx.) — LC 116/2003, art. 8º. |
 | `exigibilidadeISS` | `number` | `exigISSQN` | Exigibilidade do ISS conforme LC 116/2003. |
 | `cMunFG` | `string` | `cMunFG` | Município do fato gerador, quando diferente do local de prestação. |
+
+### Emitindo para entidades imunes / "isentas" de ISSQN
+
+**Não existe situação "isento" no ISSQN da NFS-e nacional.** O que no dia a dia
+se chama de "isenção" de ISS é, no modelo oficial, uma **Imunidade**
+(`tribISSQN = 2`), prevista na CF88 Art. 150, VI (templos, partidos, entidades
+educacionais/assistenciais sem fins lucrativos, livros, fonogramas, etc.).
+
+**Dois eixos independentes — não confundir:**
+
+| Eixo | Campo | Pergunta que responde |
+|------|-------|------------------------|
+| Situação tributária | `tributacaoIssqn` (`tribISSQN`) | A **operação** é tributada, imune, exportação ou não incide? |
+| Retenção | `tipoRetencaoIssqn` (`tpRetISSQN`) | **Quem recolhe** o ISS: ninguém retém, o tomador ou o intermediário? |
+
+A imunidade é atributo da **operação/prestador**, não do tomador. Um **tomador
+imune** (ex.: ente público) normalmente afeta apenas a **retenção**
+(`tpRetISSQN`) — não torna a operação imune. Só use `tributacaoIssqn = 2`
+quando o **próprio serviço/prestador** for imune.
+
+**Exemplo — emissão de serviço imune (sem ISS apurado):**
+
+```ts
+import { TributacaoIssqn, TipoImunidade, TipoRetencaoIssqn } from 'nfse-nacional'
+
+// dentro de tributacao:
+issqn: {
+  tributacaoIssqn: TributacaoIssqn.Imunidade,                 // 2
+  tipoImunidade: TipoImunidade.EntidadesAssistenciais,        // fundamento (CF88 Art.150 VI 'c')
+  tipoRetencaoIssqn: TipoRetencaoIssqn.NaoRetido,             // 1 — não há ISS a reter
+  // sem `aliquota` / sem `vISSQN`: operação imune não apura imposto
+}
+```
+
+> `tipoImunidade` é **obrigatório** quando `tributacaoIssqn = 2` — o validador
+> rejeita a omissão. Valores em `TipoImunidade` (0..5) mapeiam os incisos do
+> Art. 150, VI da CF88.
+
+> **Não incidência** (`tributacaoIssqn = 4`) e **exportação de serviço**
+> (`tributacaoIssqn = 3`) seguem o mesmo padrão de não apurar ISS. A exportação
+> exige ainda o país de resultado (`cPaisResult`), ainda **não suportado** pelo
+> builder — emita pela situação `1`/`2`/`4` por enquanto.
 
 ### `TributacaoFederalData` — `tribFed`
 

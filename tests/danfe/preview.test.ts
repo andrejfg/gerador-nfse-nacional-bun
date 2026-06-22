@@ -89,7 +89,7 @@ const DPS_COMPLETO: InfDpsData = {
 
   tributacao: {
     issqn: {
-      tributacaoIssqn: TributacaoIssqn.TributadaMunicipioPrestador,
+      tributacaoIssqn: TributacaoIssqn.OperacaoTributavel,
       tipoRetencaoIssqn: TipoRetencaoIssqn.NaoRetido,
       aliquota: 0.05,
     },
@@ -145,7 +145,7 @@ const DPS_CALC_ISSQN: InfDpsData = {
   valores: { vServico: 800, vBC: 800 },
   tributacao: {
     issqn: {
-      tributacaoIssqn: TributacaoIssqn.TributadaMunicipioPrestador,
+      tributacaoIssqn: TributacaoIssqn.OperacaoTributavel,
       tipoRetencaoIssqn: TipoRetencaoIssqn.NaoRetido,
       aliquota: 0.02,
     },
@@ -158,7 +158,7 @@ const DPS_ISSQN_RETIDO: InfDpsData = {
   id: 'DPS_RETIDO',
   tributacao: {
     issqn: {
-      tributacaoIssqn: TributacaoIssqn.TributadaMunicipioPrestador,
+      tributacaoIssqn: TributacaoIssqn.OperacaoTributavel,
       tipoRetencaoIssqn: TipoRetencaoIssqn.RetidoTomador,
       aliquota: 0.02,
     },
@@ -366,7 +366,7 @@ describe('buildPreviewSchema — mapeamento DPS → NfseSchema', () => {
         valores: { vServico: 1000, vBC: 1000, pAliq: 0.03 },
         tributacao: {
           issqn: {
-            tributacaoIssqn: TributacaoIssqn.TributadaMunicipioPrestador,
+            tributacaoIssqn: TributacaoIssqn.OperacaoTributavel,
             tipoRetencaoIssqn: TipoRetencaoIssqn.NaoRetido,
             // aliquota omitida intencionalmente
           },
