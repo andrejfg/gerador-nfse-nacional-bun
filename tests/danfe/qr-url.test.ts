@@ -27,6 +27,15 @@ describe('buildQrUrl', () => {
     )
   })
 
+  test('suporta tpAmb como string (defensivo p/ schemas montados à mão)', () => {
+    expect(buildQrUrl(CHAVE, '1')).toBe(
+      `https://www.nfse.gov.br/ConsultaPublica/?tpc=1&chave=${CHAVE}`
+    )
+    expect(buildQrUrl(CHAVE, '2')).toBe(
+      `https://www.producaorestrita.nfse.gov.br/ConsultaPublica/?tpc=1&chave=${CHAVE}`
+    )
+  })
+
   test('sem chave retorna apenas o host do ambiente', () => {
     expect(buildQrUrl('', 1)).toBe('https://www.nfse.gov.br')
     expect(buildQrUrl('', 2)).toBe('https://www.producaorestrita.nfse.gov.br')

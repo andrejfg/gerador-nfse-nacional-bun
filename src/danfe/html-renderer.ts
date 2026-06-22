@@ -171,8 +171,8 @@ function applyConditionals(html: string, flags: Record<string, boolean>): string
  * O host varia por ambiente: produção (`tpAmb === 1`) usa nfse.gov.br;
  * homologação (produção restrita) usa producaorestrita.nfse.gov.br.
  */
-export function buildQrUrl(chNFSe: string, tpAmb?: number): string {
-  const isProd = (tpAmb ?? 1) === 1
+export function buildQrUrl(chNFSe: string, tpAmb?: number | string): string {
+  const isProd = String(tpAmb ?? 1) === '1'
   const host = isProd ? 'https://www.nfse.gov.br' : 'https://www.producaorestrita.nfse.gov.br'
   return chNFSe ? `${host}/ConsultaPublica/?tpc=1&chave=${chNFSe}` : host
 }

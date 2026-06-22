@@ -138,10 +138,20 @@ function validateTributacao(tributacao: TributacaoData | undefined, errors: stri
 
   // XSD TCTribMunicipal: tpImunidade "somente para o caso de Imunidade".
   // Quando tribISSQN = 2 (Imunidade), tipoImunidade é obrigatório.
-  if (issqn.tributacaoIssqn === TributacaoIssqn.Imunidade && issqn.tipoImunidade === undefined) {
+  if (issqn.tributacaoIssqn === TributacaoIssqn.Imunidade && issqn.tipoImunidade == null) {
     errors.push(
       'tributacao.issqn.tipoImunidade é obrigatório quando tributacaoIssqn = 2 (Imunidade) — ' +
       'informe o fundamento da imunidade (TipoImunidade, 0..5).',
+    )
+  }
+
+  // Exportação de serviço (tribISSQN = 3) exige cPaisResult no XSD, ainda não
+  // suportado pelo builder — rejeitamos em vez de emitir um DPS inválido.
+  if (issqn.tributacaoIssqn === TributacaoIssqn.ExportacaoServico) {
+    errors.push(
+      'tributacao.issqn.tributacaoIssqn = 3 (Exportação de serviço) ainda não é suportado: ' +
+      'a exportação exige o país de resultado (cPaisResult), não emitido pelo builder. ' +
+      'Use a situação 1, 2 ou 4 por enquanto.',
     )
   }
 }

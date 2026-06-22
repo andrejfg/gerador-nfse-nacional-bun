@@ -301,6 +301,16 @@ describe('DpsValidator — ISSQN imunidade', () => {
     }))
     expect(result.isValid).toBe(true)
   })
+
+  test('Exportação de serviço (tribISSQN=3) é rejeitada (cPaisResult não suportado)', () => {
+    const result = validateDps(makeDps({
+      tributacao: {
+        issqn: { tributacaoIssqn: 3, tipoRetencaoIssqn: 1 },
+      },
+    }))
+    expect(result.isValid).toBe(false)
+    expect(result.errors.some(e => e.includes('cPaisResult'))).toBe(true)
+  })
 })
 
 // ---------------------------------------------------------------------------
