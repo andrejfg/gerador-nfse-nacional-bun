@@ -349,6 +349,9 @@ writeFileSync('preview.pdf', preview.pdfBytes!)
 | `saveToFile(xml, path, isGzip?, opts?)` | Gera o PDF e salva diretamente em arquivo. |
 | `previewFromDps(dps, opts?)` | Gera prévia com marca d'água **antes** da emissão. |
 
+> **Personalização da DANF-Se** (template HTML próprio, placeholders, marca
+> d'água): veja [docs/danfe-personalizada.md](docs/danfe-personalizada.md).
+
 **`DanfeGenerateOptions`**
 
 ```typescript
