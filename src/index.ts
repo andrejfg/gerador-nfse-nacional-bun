@@ -15,7 +15,7 @@ export { ContribuinteService, DpsValidationError, NfseNaoEncontradaError, NfseJa
 export { DanfeService } from './danfe/danfe-service.js'
 export type { DanfeResult, DanfeGenerateOptions, PreviewOptions, PreviewResult } from './danfe/danfe-service.js'
 export { DanfePreviewFormat } from './danfe/danfe-service.js'
-export { renderDanfseHtml } from './danfe/html-renderer.js'
+export { renderDanfseHtml, buildQrUrl } from './danfe/html-renderer.js'
 export type { DanfeWarning, DanfeRenderResult, DanfeOptions } from './danfe/html-renderer.js'
 export { buildPreviewSchema } from './danfe/preview-builder.js'
 
