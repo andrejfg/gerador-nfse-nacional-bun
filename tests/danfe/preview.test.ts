@@ -9,6 +9,7 @@
 
 import { describe, test, expect, beforeAll } from 'bun:test'
 import { buildPreviewSchema } from '../../src/danfe/preview-builder.js'
+import { renderDanfseHtml } from '../../src/danfe/html-renderer.js'
 import { DanfeService } from '../../src/danfe/danfe-service.js'
 import { DanfePreviewFormat } from '../../src/types/enums.js'
 import { DanfeEnvironment } from '../../src/types/enums.js'
@@ -474,6 +475,44 @@ describe('DanfeService.previewFromDps — formato HTML', () => {
     const result = await danfe.previewFromDps(DPS_COMPLETO)
     expect(result.format).toBe(DanfePreviewFormat.Html)
     expect(result.pdfBytes).toBeUndefined()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Dizeres de "não-validade fiscal" (subtítulo + rodapé)
+//
+// Regra: numa nota REAL de produção (tpAmb=1, sem isPreview) os textos são
+// falsos e devem ser suprimidos. Preview e homologação continuam exibindo.
+// ---------------------------------------------------------------------------
+
+describe('DANF-Se — supressão dos dizeres de não-validade fiscal', () => {
+  const SUBTITULO = 'NFS-e SEM VALIDADE JURÍDICA'
+  const RODAPE = 'não tem valor fiscal'
+  const AUTENTICIDADE = 'Verifique a autenticidade'
+
+  test('preview (isPreview) sempre exibe os dizeres, mesmo em produção', async () => {
+    const danfe = new DanfeService()
+    const { html } = await danfe.previewFromDps(DPS_MINIMO, { format: DanfePreviewFormat.Html })
+    expect(html).toContain(SUBTITULO)
+    expect(html).toContain(RODAPE)
+  })
+
+  test('nota real de produção (tpAmb=1, sem preview) suprime os dizeres', async () => {
+    const schema = buildPreviewSchema(DPS_MINIMO) // DPS_MINIMO é Produção
+    const { html, environment } = await renderDanfseHtml(schema)
+    expect(environment).toBe(DanfeEnvironment.Production)
+    expect(html).not.toContain(SUBTITULO)
+    expect(html).not.toContain(RODAPE)
+    // a frase de autenticidade do rodapé permanece
+    expect(html).toContain(AUTENTICIDADE)
+  })
+
+  test('nota real de homologação (tpAmb=2, sem preview) mantém os dizeres', async () => {
+    const schema = buildPreviewSchema(DPS_COMPLETO) // DPS_COMPLETO é Homologação
+    const { html, environment } = await renderDanfseHtml(schema)
+    expect(environment).toBe(DanfeEnvironment.Restricted)
+    expect(html).toContain(SUBTITULO)
+    expect(html).toContain(RODAPE)
   })
 })
 

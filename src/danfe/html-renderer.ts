@@ -341,6 +341,12 @@ export async function renderDanfseHtml(
   const templatePath = options.templatePath ?? TEMPLATE_PATH
   let html = readFileSync(templatePath, 'utf-8')
 
+  // Ambiente da nota: produção (tpAmb=1) vs homologação/produção restrita (tpAmb=2).
+  // Determina, junto com isPreview, se exibimos os dizeres de "não-validade fiscal":
+  // numa nota REAL de produção eles são falsos, então são suprimidos.
+  const env = (dps?.tpAmb ?? 1) === 1 ? DanfeEnvironment.Production : DanfeEnvironment.Restricted
+  const showSemValidade = options.isPreview === true || env === DanfeEnvironment.Restricted
+
   const intermIdentificado = !!(interm?.CNPJ || interm?.CPF)
   html = applyConditionals(html, {
     TOMADOR_IDENTIFIED: !!(toma?.CNPJ || toma?.CPF || toma?.xNome),
@@ -349,6 +355,8 @@ export async function renderDanfseHtml(
     SUBSTITUICAO_IDENTIFIED: !!(dps?.subst),
     IBSCBS_IDENTIFIED: !!ibs,
     IS_CANCELADA: isCancelled,
+    SEM_VALIDADE_HEADER: showSemValidade,
+    SEM_VALIDADE_FOOTER: showSemValidade,
   })
 
   for (const [key, value] of Object.entries(p)) {
@@ -363,6 +371,5 @@ export async function renderDanfseHtml(
 
   if (options.isPreview) html = injectWatermark(html, options.watermarkText ?? 'SEM VALOR FISCAL')
 
-  const env = (dps?.tpAmb ?? 1) === 1 ? DanfeEnvironment.Production : DanfeEnvironment.Restricted
   return { html, warnings, environment: env }
 }
