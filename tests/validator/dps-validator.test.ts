@@ -5,7 +5,16 @@
  */
 import { describe, test, expect } from 'bun:test'
 import { validateDps } from '../../src/validator/dps-validator.js'
-import { TipoAmbiente, EmitenteDPS } from '../../src/types/enums.js'
+import {
+  TipoAmbiente,
+  EmitenteDPS,
+  ModoPrestacaoComExt,
+  VinculoPrestacao,
+  MecAFComexPrestador,
+  MecAFComexTomador,
+  MovimentacaoTemporariaBens,
+  EnvioMDIC,
+} from '../../src/types/enums.js'
 import type { DpsData } from '../../src/types/dtos.js'
 
 // ---------------------------------------------------------------------------
@@ -409,13 +418,58 @@ describe('DpsValidator — exterior (NIF + endExt + comExt)', () => {
         codigoServico: { cServTribNac: '171201' },
         xDescServ: 'Gestão de patrimônio',
         comercioExterior: {
-          mdPrestacao: '1', vincPrest: '0', tpMoeda: '790', vServMoeda: 1000,
-          mecAFComexP: '01', mecAFComexT: '01', movTempBens: '1', mdic: '0',
+          mdPrestacao: ModoPrestacaoComExt.Transfronteirico,
+          vincPrest: VinculoPrestacao.SemVinculo,
+          tpMoeda: '790',
+          vServMoeda: 1000,
+          mecAFComexP: MecAFComexPrestador.Nenhum,
+          mecAFComexT: MecAFComexTomador.Nenhum,
+          movTempBens: MovimentacaoTemporariaBens.Nao,
+          mdic: EnvioMDIC.NaoEnviar,
         },
       },
     }))
     expect(result.isValid).toBe(true)
     expect(result.errors).toHaveLength(0)
+  })
+
+  test('comExt com mdPrestacao fora do enum é rejeitado', () => {
+    const result = validateDps(makeDps({
+      tomador: tomadorExterior,
+      servico: {
+        localPrestacao: { cLocPrestacao: '3106200' },
+        codigoServico: { cServTribNac: '171201' },
+        xDescServ: 'Gestão de patrimônio',
+        comercioExterior: {
+          // valor inválido forçado por cast — simula entrada crua incorreta
+          mdPrestacao: '9' as unknown as ModoPrestacaoComExt,
+          vincPrest: VinculoPrestacao.SemVinculo,
+          tpMoeda: '790',
+          vServMoeda: 1000,
+        },
+      },
+    }))
+    expect(result.isValid).toBe(false)
+    expect(result.errors.some(e => e.includes('mdPrestacao'))).toBe(true)
+  })
+
+  test('comExt com tpMoeda fora do formato [0-9]{3} é rejeitado', () => {
+    const result = validateDps(makeDps({
+      tomador: tomadorExterior,
+      servico: {
+        localPrestacao: { cLocPrestacao: '3106200' },
+        codigoServico: { cServTribNac: '171201' },
+        xDescServ: 'Gestão de patrimônio',
+        comercioExterior: {
+          mdPrestacao: ModoPrestacaoComExt.Transfronteirico,
+          vincPrest: VinculoPrestacao.SemVinculo,
+          tpMoeda: '79', // 2 dígitos — inválido
+          vServMoeda: 1000,
+        },
+      },
+    }))
+    expect(result.isValid).toBe(false)
+    expect(result.errors.some(e => e.includes('tpMoeda'))).toBe(true)
   })
 
   test('endereço com cMun E exterior ao mesmo tempo é rejeitado', () => {

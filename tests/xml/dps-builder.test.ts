@@ -7,6 +7,13 @@ import {
   TipoImunidade,
   TipoRetencaoIssqn,
   OpcaoSimplesNacional,
+  ModoPrestacaoComExt,
+  VinculoPrestacao,
+  CodigoMoeda,
+  MecAFComexPrestador,
+  MecAFComexTomador,
+  MovimentacaoTemporariaBens,
+  EnvioMDIC,
 } from '../../src/types/enums.js'
 import type { DpsData } from '../../src/types/dtos.js'
 
@@ -232,14 +239,14 @@ describe('buildDpsXml — exterior (endExt + comExt)', () => {
         codigoServico: { cServTribNac: '171201', cNBSPrinc: '109054000' },
         xDescServ: 'Gestão de patrimônio',
         comercioExterior: {
-          mdPrestacao: '1',
-          vincPrest: '0',
-          tpMoeda: '790',
+          mdPrestacao: ModoPrestacaoComExt.Transfronteirico,
+          vincPrest: VinculoPrestacao.SemVinculo,
+          tpMoeda: CodigoMoeda.Real,
           vServMoeda: 44628.38,
-          mecAFComexP: '01',
-          mecAFComexT: '01',
-          movTempBens: '1',
-          mdic: '0',
+          mecAFComexP: MecAFComexPrestador.Nenhum,
+          mecAFComexT: MecAFComexTomador.Nenhum,
+          movTempBens: MovimentacaoTemporariaBens.Nao,
+          mdic: EnvioMDIC.NaoEnviar,
         },
       },
     })
@@ -270,5 +277,22 @@ describe('buildDpsXml — exterior (endExt + comExt)', () => {
 
   test('omite <comExt> quando comercioExterior não é fornecido', () => {
     expect(buildDpsXml(makeDps())).not.toContain('<comExt>')
+  })
+
+  test('preserva zero à esquerda dos códigos de mecanismo (enum string)', () => {
+    const dps = makeDpsExterior()
+    dps.infDps.servico.comercioExterior!.mecAFComexP = MecAFComexPrestador.Nenhum // '01'
+    dps.infDps.servico.comercioExterior!.mecAFComexT = MecAFComexTomador.Desconhecido // '00'
+    const xml = buildDpsXml(dps)
+    expect(xml).toContain('<mecAFComexP>01</mecAFComexP>')
+    expect(xml).toContain('<mecAFComexT>00</mecAFComexT>')
+    // dígito único também sai como string, sem perder o zero
+    expect(xml).toContain('<mdic>0</mdic>')
+  })
+
+  test('serializa código de mecanismo de dois dígitos alto (sem zero à esquerda)', () => {
+    const dps = makeDpsExterior()
+    dps.infDps.servico.comercioExterior!.mecAFComexT = MecAFComexTomador.ZPE // '26'
+    expect(buildDpsXml(dps)).toContain('<mecAFComexT>26</mecAFComexT>')
   })
 })

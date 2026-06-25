@@ -7,6 +7,14 @@
  */
 
 import { z } from 'zod'
+import {
+  ModoPrestacaoComExt,
+  VinculoPrestacao,
+  MecAFComexPrestador,
+  MecAFComexTomador,
+  MovimentacaoTemporariaBens,
+  EnvioMDIC,
+} from '../types/enums.js'
 
 // ---------------------------------------------------------------------------
 // Padrões de regex do XSD
@@ -223,14 +231,14 @@ export const ServicoSchema = z.object({
     .min(1, 'Descrição do serviço (xDescServ) não pode ser vazia'),
   comercioExterior: z
     .object({
-      mdPrestacao: z.string().min(1, 'comercioExterior.mdPrestacao é obrigatório'),
-      vincPrest: z.string().min(1, 'comercioExterior.vincPrest é obrigatório'),
-      tpMoeda: z.string().min(1, 'comercioExterior.tpMoeda é obrigatório'),
+      mdPrestacao: z.enum(ModoPrestacaoComExt, { error: 'comercioExterior.mdPrestacao inválido (ver ModoPrestacaoComExt)' }),
+      vincPrest: z.enum(VinculoPrestacao, { error: 'comercioExterior.vincPrest inválido (ver VinculoPrestacao)' }),
+      tpMoeda: z.string().regex(/^[0-9]{3}$/, 'comercioExterior.tpMoeda deve ter 3 dígitos (tabela de moedas do BACEN)'),
       vServMoeda: z.number().positive('comercioExterior.vServMoeda deve ser positivo'),
-      mecAFComexP: z.string().optional(),
-      mecAFComexT: z.string().optional(),
-      movTempBens: z.string().optional(),
-      mdic: z.string().optional(),
+      mecAFComexP: z.enum(MecAFComexPrestador, { error: 'comercioExterior.mecAFComexP inválido (ver MecAFComexPrestador)' }).optional(),
+      mecAFComexT: z.enum(MecAFComexTomador, { error: 'comercioExterior.mecAFComexT inválido (ver MecAFComexTomador)' }).optional(),
+      movTempBens: z.enum(MovimentacaoTemporariaBens, { error: 'comercioExterior.movTempBens inválido (ver MovimentacaoTemporariaBens)' }).optional(),
+      mdic: z.enum(EnvioMDIC, { error: 'comercioExterior.mdic inválido (ver EnvioMDIC)' }).optional(),
     })
     .optional(),
   obra: z
