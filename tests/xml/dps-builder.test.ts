@@ -207,3 +207,68 @@ describe('buildDpsXml', () => {
     expect(buildDpsXml(makeDps())).not.toContain('<interm>')
   })
 })
+
+describe('buildDpsXml — exterior (endExt + comExt)', () => {
+  function makeDpsExterior(): DpsData {
+    return makeDps({
+      tomador: {
+        nif: '2553340916',
+        nome: 'MALCOM FILIPE SILVA DE OLIVEIRA',
+        endereco: {
+          exterior: {
+            cPais: 'SA',
+            cEndPost: '13332-7663',
+            xCidade: 'RIYADH',
+            xEstProvReg: 'ARABIA SAUDITA',
+          },
+          xLgr: 'VILLA',
+          nro: '124',
+          xCpl: 'AL BUSTAN VILLAGE 3010 - 13332',
+          xBairro: 'AL ARID UNIT 2',
+        },
+      },
+      servico: {
+        localPrestacao: { cLocPrestacao: '3144805' },
+        codigoServico: { cServTribNac: '171201', cNBSPrinc: '109054000' },
+        xDescServ: 'Gestão de patrimônio',
+        comercioExterior: {
+          mdPrestacao: '1',
+          vincPrest: '0',
+          tpMoeda: '790',
+          vServMoeda: 44628.38,
+          mecAFComexP: '01',
+          mecAFComexT: '01',
+          movTempBens: '1',
+          mdic: '0',
+        },
+      },
+    })
+  }
+
+  test('emite <endExt> em vez de <endNac> para tomador estrangeiro', () => {
+    const xml = buildDpsXml(makeDpsExterior())
+    expect(xml).toContain('<endExt><cPais>SA</cPais><cEndPost>13332-7663</cEndPost><xCidade>RIYADH</xCidade><xEstProvReg>ARABIA SAUDITA</xEstProvReg></endExt>')
+    // o tomador não tem <endNac>; o prestador (nacional) ainda tem
+    expect(xml).toContain('<toma>')
+    const tomaBloco = xml.slice(xml.indexOf('<toma>'), xml.indexOf('</toma>'))
+    expect(tomaBloco).not.toContain('<endNac>')
+  })
+
+  test('endExt vem antes de xLgr/nro/xCpl/xBairro', () => {
+    const xml = buildDpsXml(makeDpsExterior())
+    expect(xml).toContain('</endExt><xLgr>VILLA</xLgr><nro>124</nro>')
+  })
+
+  test('inclui o NIF do tomador estrangeiro', () => {
+    expect(buildDpsXml(makeDpsExterior())).toContain('<NIF>2553340916</NIF>')
+  })
+
+  test('emite <comExt> logo após </cServ> na ordem do XSD', () => {
+    const xml = buildDpsXml(makeDpsExterior())
+    expect(xml).toContain('</cServ><comExt><mdPrestacao>1</mdPrestacao><vincPrest>0</vincPrest><tpMoeda>790</tpMoeda><vServMoeda>44628.38</vServMoeda><mecAFComexP>01</mecAFComexP><mecAFComexT>01</mecAFComexT><movTempBens>1</movTempBens><mdic>0</mdic></comExt>')
+  })
+
+  test('omite <comExt> quando comercioExterior não é fornecido', () => {
+    expect(buildDpsXml(makeDps())).not.toContain('<comExt>')
+  })
+})

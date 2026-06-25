@@ -10,15 +10,19 @@ import { TipoRetencaoIssqn } from '../types/enums.js'
 
 function mapEndereco(e?: EnderecoData): EnderNacSchema | undefined {
   if (!e) return undefined
+  const ext = e.exterior
   return {
-    xLgr:    e.xLgr    ?? '',
-    nro:     e.nro     ?? '',
-    xCpl:    e.xCpl    ?? '',
-    xBairro: e.xBairro ?? '',
-    cMun:    e.cMun,
-    UF:      e.uf      ?? '',
-    CEP:     e.cep     ?? '',
-    cPais:   e.cPais   ?? '1058',
+    xLgr:        e.xLgr    ?? '',
+    nro:         e.nro     ?? '',
+    xCpl:        e.xCpl    ?? '',
+    xBairro:     e.xBairro ?? '',
+    cMun:        e.cMun    ?? '',
+    UF:          e.uf      ?? '',
+    CEP:         e.cep     ?? '',
+    cPais:       ext?.cPais ?? e.cPais ?? '1058',
+    cEndPost:    ext?.cEndPost    ?? '',
+    xCidade:     ext?.xCidade     ?? '',
+    xEstProvReg: ext?.xEstProvReg ?? '',
   }
 }
 
@@ -79,6 +83,7 @@ export function buildPreviewSchema(dps: InfDpsData): NfseSchema {
           toma: toma ? {
             CNPJ:     toma.cnpj   ?? '',
             CPF:      toma.cpf    ?? '',
+            NIF:      toma.nif    ?? '',
             IM:       toma.inscricaoMunicipal ?? '',
             xNome:    toma.nome   ?? '',
             enderNac: mapEndereco(toma.endereco),
@@ -88,6 +93,7 @@ export function buildPreviewSchema(dps: InfDpsData): NfseSchema {
           interm: dps.intermediario ? {
             CNPJ:     dps.intermediario.cnpj ?? '',
             CPF:      dps.intermediario.cpf  ?? '',
+            NIF:      '',
             IM:       dps.intermediario.inscricaoMunicipal ?? '',
             xNome:    dps.intermediario.nome ?? '',
             enderNac: undefined,

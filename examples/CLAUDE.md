@@ -25,6 +25,7 @@ caminho do arquivo e redireciona para a variante `.local.ts` quando existe.
 | 8 | `8-cancelamento.ts` | Cancelamento com pré-verificação | sim |
 | 9 | `9-render-xml.ts` | Renderiza DANF-Se de qualquer XML (detecta NFS-e vs DPS avulso) | não |
 | 10 | `10-extrair-emitir-comparar.ts` | Round-trip: parse → `DpsData` → `buildDpsXml` → compara com original | não |
+| 11 | `11-emitir-exterior.ts` | Emissão para o exterior (tomador por NIF + `endExt` + `comExt`) + DANF-Se — só homologação | sim |
 
 ## Convenções
 

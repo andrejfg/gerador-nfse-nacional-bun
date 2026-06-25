@@ -115,9 +115,11 @@ function extractTomador(toma: Record<string, unknown> | undefined): TomadorSchem
   if (!toma) return undefined
   const end    = rec(toma['end'])
   const endNac = end ? rec(end['endNac']) : undefined
+  const endExt = end ? rec(end['endExt']) : undefined
   return {
     CNPJ:     str(toma['CNPJ']),
     CPF:      str(toma['CPF']),
+    NIF:      str(toma['NIF']),
     IM:       str(toma['IM']),
     xNome:    str(toma['xNome']),
     enderNac: end ? {
@@ -128,7 +130,11 @@ function extractTomador(toma: Record<string, unknown> | undefined): TomadorSchem
       cMun:    str(endNac?.['cMun'] ?? end['cMun']),
       UF:      str(endNac?.['UF']   ?? end['UF']),
       CEP:     str(endNac?.['CEP']  ?? end['CEP']),
-      cPais:   str(endNac?.['cPais'] ?? end['cPais'], '1058'),
+      // Endereço estrangeiro (<endExt>): cPais aqui é alfabético (ex: "SA"), não BACEN
+      cPais:       str(endExt?.['cPais'] ?? endNac?.['cPais'] ?? end['cPais'], '1058'),
+      cEndPost:    str(endExt?.['cEndPost']),
+      xCidade:     str(endExt?.['xCidade']),
+      xEstProvReg: str(endExt?.['xEstProvReg']),
     } : extractEnderecoPlano(rec(toma['enderNac'])),
     fone:  str(toma['fone']),
     email: str(toma['email']),
@@ -372,9 +378,11 @@ export interface EmitSchema {
 export interface TomadorSchema {
   CNPJ: string
   CPF: string
+  /** NIF — Número de Identificação Fiscal de tomador estrangeiro */
+  NIF: string
   IM: string
   xNome: string
-  /** Endereço extraído de <end>/<endNac> */
+  /** Endereço extraído de <end>/<endNac> (ou <end>/<endExt> para estrangeiro) */
   enderNac?: EnderNacSchema
   fone: string
   email: string
@@ -389,6 +397,12 @@ export interface EnderNacSchema {
   UF: string
   CEP: string
   cPais: string
+  /** Código postal estrangeiro (<endExt><cEndPost>) — vazio para endereço nacional */
+  cEndPost?: string
+  /** Cidade estrangeira (<endExt><xCidade>) — vazio para endereço nacional */
+  xCidade?: string
+  /** Estado/província/região estrangeira (<endExt><xEstProvReg>) */
+  xEstProvReg?: string
 }
 
 export interface DpsSchema {

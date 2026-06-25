@@ -463,6 +463,9 @@ A pasta [`examples/`](./examples) contém scripts prontos para uso:
 | 6 | `6-preview-danfe.ts` | Preview da DANF-Se antes da emissão (marca d'água) |
 | 7 | `7-consulta.ts` | Consulta de NFS-e por chave de acesso ou ID do DPS |
 | 8 | `8-cancelamento.ts` | Cancelamento de NFS-e com registro de evento |
+| 9 | `9-render-xml.ts` | Renderiza a DANF-Se de qualquer XML (NFS-e ou DPS avulso) |
+| 10 | `10-extrair-emitir-comparar.ts` | Round-trip: parse → `DpsData` → `buildDpsXml` → compara com o original |
+| 11 | `11-emitir-exterior.ts` | Emissão para o exterior (tomador por NIF + `endExt` + `comExt`) + DANF-Se |
 
 ### Configurar e executar os exemplos
 
@@ -474,7 +477,7 @@ cp examples/.env.example examples/.env
 #    CERT_PATH, CERT_PASSWORD, CNPJ_PRESTADOR, etc.
 
 # 3. Execute um exemplo pelo número
-bun run example 1   # ou 2, 3, 4, 5, 6, 7, 8
+bun run example 1   # ou 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
 ```
 
 > **Dados sensíveis locais:** Se preferir hardcodar os dados diretamente no código,
@@ -542,7 +545,7 @@ bun run typecheck      # Verificação de tipos sem emitir arquivos
 bun run lint           # Linting com Biome
 bun run lint:fix       # Linting com auto-correção
 bun run format         # Formatação com Biome
-bun run example <n>    # Executa o exemplo de número <n> (1–8)
+bun run example <n>    # Executa o exemplo de número <n> (1–11)
 ```
 
 ### Rodando os testes

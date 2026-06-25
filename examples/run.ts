@@ -15,6 +15,7 @@ const examples: Record<string, string> = {
   "8": "examples/8-cancelamento.ts",
   "9": "examples/9-render-xml.ts",
   "10": "examples/10-extrair-emitir-comparar.ts",
+  "11": "examples/11-emitir-exterior.ts",
 };
 
 const base = examples[num];

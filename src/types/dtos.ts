@@ -23,7 +23,32 @@ import type {
 // Endereço
 // ---------------------------------------------------------------------------
 
-/** Endereço nacional do prestador, tomador ou intermediário (elemento `enderNac` no XML). */
+/**
+ * Endereço no exterior (elemento `endExt` no XML, dentro de `<end>`).
+ * Usado quando o prestador, tomador ou intermediário não tem endereço nacional.
+ * Mutuamente exclusivo com `cMun` (XSD TCEndereco: choice entre `endNac` e `endExt`).
+ */
+export interface EnderecoExteriorData {
+  /**
+   * Código do país conforme tabela de países do exterior da NFS-e (`cPais`).
+   * Ex.: `SA` (Arábia Saudita), `US` (Estados Unidos), `PT` (Portugal).
+   */
+  cPais: string
+  /** Código de endereçamento postal estrangeiro (`cEndPost`). Ex.: `13332-7663`. */
+  cEndPost?: string
+  /** Nome da cidade no exterior (`xCidade`). Ex.: `RIYADH`. */
+  xCidade: string
+  /** Estado, província ou região no exterior (`xEstProvReg`). Ex.: `ARABIA SAUDITA`. */
+  xEstProvReg?: string
+}
+
+/**
+ * Endereço do prestador, tomador ou intermediário (elemento `end`/`enderNac` no XML).
+ *
+ * Por padrão representa um endereço **nacional** (`endNac`, com `cMun`). Para
+ * endereços no **exterior**, preencha `exterior` (`endExt`) e omita `cMun` — os
+ * dois são mutuamente exclusivos conforme o XSD (TCEndereco: choice endNac|endExt).
+ */
 export interface EnderecoData {
   /** Logradouro — nome da rua, avenida, travessa etc. (`xLgr`). */
   xLgr?: string
@@ -33,8 +58,11 @@ export interface EnderecoData {
   xCpl?: string
   /** Nome do bairro (`xBairro`). */
   xBairro?: string
-  /** Código IBGE do município com 7 dígitos (`cMun`). Ex.: `3106200` para Belo Horizonte/MG. */
-  cMun: string
+  /**
+   * Código IBGE do município com 7 dígitos (`cMun`). Ex.: `3106200` para Belo Horizonte/MG.
+   * Obrigatório para endereço nacional; omita quando `exterior` for informado.
+   */
+  cMun?: string
   /** Sigla da UF. Ex.: `MG`. */
   uf?: string
   /** CEP com 8 dígitos, sem hífen (`CEP`). Ex.: `30100000`. */
@@ -43,6 +71,11 @@ export interface EnderecoData {
   cPais?: string
   /** Nome do município por extenso (`xMun`). */
   xMun?: string
+  /**
+   * Endereço no exterior (`endExt`). Quando informado, o builder emite `<endExt>`
+   * no lugar de `<endNac>` e `cMun` deve ser omitido.
+   */
+  exterior?: EnderecoExteriorData
 }
 
 // ---------------------------------------------------------------------------
@@ -219,6 +252,34 @@ export interface ObraData {
 }
 
 /**
+ * Comércio exterior do serviço (`comExt` no XML, dentro de `<serv>`).
+ * Preenchido quando o serviço envolve operação de comércio exterior — tipicamente
+ * exportação/importação de serviços, com tomador ou prestador no exterior.
+ * Ref XSD: `TCInfoComExt`.
+ */
+export interface ComercioExteriorData {
+  /**
+   * Modo de prestação do serviço no comércio exterior (`mdPrestacao`).
+   * Ex.: `1` = Transfronteiriço.
+   */
+  mdPrestacao: string
+  /** Vínculo entre as partes da prestação (`vincPrest`). Ex.: `0` = Sem vínculo. */
+  vincPrest: string
+  /** Código da moeda da transação (`tpMoeda`), conforme tabela ISO 4217 numérica. */
+  tpMoeda: string
+  /** Valor do serviço na moeda estrangeira informada em `tpMoeda` (`vServMoeda`). */
+  vServMoeda: number
+  /** Mecanismo de apoio/fomento ao comércio exterior do prestador (`mecAFComexP`). */
+  mecAFComexP?: string
+  /** Mecanismo de apoio/fomento ao comércio exterior do tomador (`mecAFComexT`). */
+  mecAFComexT?: string
+  /** Movimentação temporária de bens (`movTempBens`). Ex.: `1` = Não. */
+  movTempBens?: string
+  /** Número do Registro de Operações Financeiras / declaração MDIC (`mdic`). */
+  mdic?: string
+}
+
+/**
  * Dados do serviço prestado (`serv` no XML do DPS).
  * Agrupa localização, classificação fiscal e descrição do serviço.
  */
@@ -232,6 +293,11 @@ export interface ServicoData {
    * Deve descrever de forma clara e objetiva a natureza do serviço.
    */
   xDescServ: string
+  /**
+   * Comércio exterior (`comExt`) — informar quando o serviço envolve operação
+   * internacional (tomador/prestador no exterior).
+   */
+  comercioExterior?: ComercioExteriorData
   /** Dados de obra de construção civil, quando aplicável. */
   obra?: ObraData
   /** Informações complementares ao serviço. */

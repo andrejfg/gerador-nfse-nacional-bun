@@ -30,8 +30,17 @@ function tag(name: string, value: string | number | undefined | null): string {
 }
 
 function buildEndereco(end: EnderecoData): string {
-  const endNac = `<endNac>${tag('cMun', end.cMun)}${tag('CEP', end.cep?.replace(/\D/g, ''))}</endNac>`
-  return endNac
+  // TCEndereco (XSD): choice(endNac | endExt), seguido de xLgr, nro, xCpl, xBairro.
+  const ext = end.exterior
+  const endChoice = ext
+    ? `<endExt>${
+      tag('cPais', ext.cPais)
+    }${tag('cEndPost', ext.cEndPost)
+    }${tag('xCidade', ext.xCidade)
+    }${tag('xEstProvReg', ext.xEstProvReg)
+    }</endExt>`
+    : `<endNac>${tag('cMun', end.cMun)}${tag('CEP', end.cep?.replace(/\D/g, ''))}</endNac>`
+  return endChoice
     + tag('xLgr', end.xLgr)
     + tag('nro', end.nro)
     + tag('xCpl', end.xCpl)
@@ -103,6 +112,22 @@ function buildServico(serv: ServicoData): string {
     }</infoCompl>`
     : ''
 
+  // TCInfoComExt (XSD): mdPrestacao, vincPrest, tpMoeda, vServMoeda, mecAFComexP?,
+  // mecAFComexT?, movTempBens?, mdic? — emitido após <cServ>.
+  const ce = serv.comercioExterior
+  const comExtXml = ce
+    ? `<comExt>${
+      tag('mdPrestacao', ce.mdPrestacao)
+    }${tag('vincPrest', ce.vincPrest)
+    }${tag('tpMoeda', ce.tpMoeda)
+    }${tag('vServMoeda', fmt(ce.vServMoeda))
+    }${tag('mecAFComexP', ce.mecAFComexP)
+    }${tag('mecAFComexT', ce.mecAFComexT)
+    }${tag('movTempBens', ce.movTempBens)
+    }${tag('mdic', ce.mdic)
+    }</comExt>`
+    : ''
+
   return `<serv><locPrest>${
     tag('cLocPrestacao', serv.localPrestacao.cLocPrestacao)
   }${tag('cPaisPrestacao', serv.localPrestacao.cPaisPrestacao)
@@ -112,7 +137,7 @@ function buildServico(serv: ServicoData): string {
   }${tag('xDescServ', serv.xDescServ)
   }${tag('cNBS', serv.codigoServico.cNBSPrinc)
   }${tag('cIntContrib', serv.codigoServico.cIntContrib)
-  }</cServ>${obraXml}${infoComplXml}</serv>`
+  }</cServ>${comExtXml}${obraXml}${infoComplXml}</serv>`
 }
 
 function buildValores(val: ValoresServicoData, trib?: TributacaoData): string {

@@ -83,14 +83,29 @@ export const DhEmissaoSchema = z
 // Endereço
 // ---------------------------------------------------------------------------
 
-export const EnderecoSchema = z.object({
-  cMun: CodMunIBGESchema,
-  cep: CepSchema.optional(),
-  xLgr: z.string().optional(),
-  nro: z.string().optional(),
-  xCpl: z.string().optional(),
-  xBairro: z.string().optional(),
+export const EnderecoExteriorSchema = z.object({
+  cPais: z.string().min(1, 'endereco.exterior.cPais (código do país) é obrigatório no endereço estrangeiro'),
+  cEndPost: z.string().optional(),
+  xCidade: z.string().min(1, 'endereco.exterior.xCidade (cidade) é obrigatória no endereço estrangeiro'),
+  xEstProvReg: z.string().optional(),
 })
+
+export const EnderecoSchema = z
+  .object({
+    cMun: CodMunIBGESchema.optional(),
+    cep: CepSchema.optional(),
+    xLgr: z.string().optional(),
+    nro: z.string().optional(),
+    xCpl: z.string().optional(),
+    xBairro: z.string().optional(),
+    exterior: EnderecoExteriorSchema.optional(),
+  })
+  .refine(e => Boolean(e.cMun) !== Boolean(e.exterior), {
+    message:
+      'Endereço deve ter exatamente um entre cMun (endereço nacional) e exterior (endExt) — ' +
+      'são mutuamente exclusivos (XSD TCEndereco: choice endNac|endExt)',
+    path: ['cMun'],
+  })
 
 // ---------------------------------------------------------------------------
 // Regime tributário (obrigatório no prestador)
@@ -206,6 +221,18 @@ export const ServicoSchema = z.object({
   xDescServ: z
     .string()
     .min(1, 'Descrição do serviço (xDescServ) não pode ser vazia'),
+  comercioExterior: z
+    .object({
+      mdPrestacao: z.string().min(1, 'comercioExterior.mdPrestacao é obrigatório'),
+      vincPrest: z.string().min(1, 'comercioExterior.vincPrest é obrigatório'),
+      tpMoeda: z.string().min(1, 'comercioExterior.tpMoeda é obrigatório'),
+      vServMoeda: z.number().positive('comercioExterior.vServMoeda deve ser positivo'),
+      mecAFComexP: z.string().optional(),
+      mecAFComexT: z.string().optional(),
+      movTempBens: z.string().optional(),
+      mdic: z.string().optional(),
+    })
+    .optional(),
   obra: z
     .object({
       inscImobFisc: z.string().optional(),
