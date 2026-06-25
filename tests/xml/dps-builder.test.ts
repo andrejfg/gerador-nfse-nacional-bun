@@ -281,10 +281,18 @@ describe('buildDpsXml — exterior (endExt + comExt)', () => {
 
   test('preserva zero à esquerda dos códigos de mecanismo (enum string)', () => {
     const dps = makeDpsExterior()
-    dps.infDps.servico.comercioExterior!.mecAFComexT = MecAFComexTomador.ZPE
+    dps.infDps.servico.comercioExterior!.mecAFComexP = MecAFComexPrestador.Nenhum // '01'
+    dps.infDps.servico.comercioExterior!.mecAFComexT = MecAFComexTomador.Desconhecido // '00'
     const xml = buildDpsXml(dps)
-    expect(xml).toContain('<mecAFComexT>26</mecAFComexT>')
+    expect(xml).toContain('<mecAFComexP>01</mecAFComexP>')
+    expect(xml).toContain('<mecAFComexT>00</mecAFComexT>')
     // dígito único também sai como string, sem perder o zero
     expect(xml).toContain('<mdic>0</mdic>')
+  })
+
+  test('serializa código de mecanismo de dois dígitos alto (sem zero à esquerda)', () => {
+    const dps = makeDpsExterior()
+    dps.infDps.servico.comercioExterior!.mecAFComexT = MecAFComexTomador.ZPE // '26'
+    expect(buildDpsXml(dps)).toContain('<mecAFComexT>26</mecAFComexT>')
   })
 })
