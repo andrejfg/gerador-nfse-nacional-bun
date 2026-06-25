@@ -390,3 +390,43 @@ describe('DpsValidator — validação Zod (XSD v1.01)', () => {
     expect(result.errors.some(e => e.includes('dataCompetencia') || e.includes('competência'))).toBe(true)
   })
 })
+
+describe('DpsValidator — exterior (NIF + endExt + comExt)', () => {
+  const tomadorExterior: DpsData['infDps']['tomador'] = {
+    nif: '2553340916',
+    nome: 'MALCOM FILIPE SILVA DE OLIVEIRA',
+    endereco: {
+      exterior: { cPais: 'SA', cEndPost: '13332-7663', xCidade: 'RIYADH', xEstProvReg: 'ARABIA SAUDITA' },
+      xLgr: 'VILLA', nro: '124', xBairro: 'AL ARID UNIT 2',
+    },
+  }
+
+  test('tomador estrangeiro (NIF + endExt, sem cMun) é válido', () => {
+    const result = validateDps(makeDps({
+      tomador: tomadorExterior,
+      servico: {
+        localPrestacao: { cLocPrestacao: '3106200' },
+        codigoServico: { cServTribNac: '171201' },
+        xDescServ: 'Gestão de patrimônio',
+        comercioExterior: {
+          mdPrestacao: '1', vincPrest: '0', tpMoeda: '790', vServMoeda: 1000,
+          mecAFComexP: '01', mecAFComexT: '01', movTempBens: '1', mdic: '0',
+        },
+      },
+    }))
+    expect(result.isValid).toBe(true)
+    expect(result.errors).toHaveLength(0)
+  })
+
+  test('endereço com cMun E exterior ao mesmo tempo é rejeitado', () => {
+    const result = validateDps(makeDps({
+      tomador: {
+        nif: '2553340916',
+        nome: 'Teste',
+        endereco: { cMun: '3106200', exterior: { cPais: 'SA', xCidade: 'RIYADH' } },
+      },
+    }))
+    expect(result.isValid).toBe(false)
+    expect(result.errors.some(e => e.includes('mutuamente exclusivos') || e.includes('exterior'))).toBe(true)
+  })
+})

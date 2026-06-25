@@ -213,3 +213,40 @@ describe('parseNfseXml', () => {
     expect(typeof schema.infNFSe?.chNFSe).toBe('string')
   })
 })
+
+describe('parseNfseXml — tomador estrangeiro (NIF + endExt)', () => {
+  const NFSE_EXT = `<?xml version="1.0" encoding="UTF-8"?>
+<NFSe xmlns="http://www.sped.fazenda.gov.br/nfse" versao="1.01">
+  <infNFSe Id="NFS31448"><cStat>100</cStat><nNFSe>531</nNFSe>
+    <DPS><infDPS Id="DPS314">
+      <tpAmb>1</tpAmb><serie>70000</serie><nDPS>284</nDPS>
+      <toma>
+        <NIF>2553340916</NIF>
+        <xNome>MALCOM FILIPE SILVA DE OLIVEIRA</xNome>
+        <end>
+          <endExt><cPais>SA</cPais><cEndPost>13332-7663</cEndPost><xCidade>RIYADH</xCidade><xEstProvReg>ARABIA SAUDITA</xEstProvReg></endExt>
+          <xLgr>VILLA</xLgr><nro>124</nro><xCpl>AL BUSTAN VILLAGE 3010 - 13332</xCpl><xBairro>AL ARID UNIT 2</xBairro>
+        </end>
+      </toma>
+    </infDPS></DPS>
+  </infNFSe>
+</NFSe>`
+
+  test('extrai NIF do tomador', () => {
+    const toma = parseNfseXml(NFSE_EXT).infNFSe?.DPS?.infDPS.toma
+    expect(toma?.NIF).toBe('2553340916')
+    expect(toma?.CNPJ).toBe('')
+    expect(toma?.CPF).toBe('')
+  })
+
+  test('extrai endereço estrangeiro (endExt)', () => {
+    const end = parseNfseXml(NFSE_EXT).infNFSe?.DPS?.infDPS.toma?.enderNac
+    expect(end?.cPais).toBe('SA')
+    expect(end?.cEndPost).toBe('13332-7663')
+    expect(end?.xCidade).toBe('RIYADH')
+    expect(end?.xEstProvReg).toBe('ARABIA SAUDITA')
+    expect(end?.xLgr).toBe('VILLA')
+    expect(end?.nro).toBe('124')
+    expect(end?.xBairro).toBe('AL ARID UNIT 2')
+  })
+})

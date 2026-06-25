@@ -117,10 +117,25 @@ function fmtEnderecoSemMunCep(end?: EnderNacSchema): string {
   return parts.join(', ') || '-'
 }
 
-function fmtDoc(cnpj: string, cpf: string): string {
+function fmtDoc(cnpj: string, cpf: string, nif = ''): string {
   if (cnpj.replace(/\D/g, '').length === 14) return formatCnpj(cnpj)
   if (cpf.replace(/\D/g, '').length === 11) return formatCpf(cpf)
+  // Tomador estrangeiro: NIF não tem máscara fixa — exibe como veio
+  if (nif) return nif
   return '-'
+}
+
+// Município do tomador: nacional (lookup IBGE por cMun) ou estrangeiro (cidade do endExt)
+function fmtMunicipio(
+  mun: { nome: string; uf: string } | undefined,
+  end?: EnderNacSchema,
+): string {
+  if (mun) return `${mun.nome} - ${mun.uf}`
+  if (end?.xCidade) {
+    const regiao = end.xEstProvReg || end.cPais
+    return regiao ? `${end.xCidade} - ${regiao}` : end.xCidade
+  }
+  return end?.cMun || '-'
 }
 
 function buildWatermarkHtml(text: string): string {
@@ -259,12 +274,14 @@ export async function renderDanfseHtml(
     '{{PREST_EMAIL}}': h(emit?.email),
     '{{PREST_REGIME}}': h(regTrib ? (REGIME_ESP_TRIB[regTrib.regEspTrib] ?? String(regTrib.regEspTrib)) : '-'),
     '{{PREST_SIMPNAC}}': h(regTrib ? (SIMPLES_NACIONAL[regTrib.opSimpNac] ?? String(regTrib.opSimpNac)) : '-'),
-    '{{TOMA_CNPJ}}': h(fmtDoc(toma?.CNPJ ?? '', toma?.CPF ?? '')),
+    '{{TOMA_CNPJ}}': h(fmtDoc(toma?.CNPJ ?? '', toma?.CPF ?? '', toma?.NIF ?? '')),
     '{{TOMA_XNOME}}': h(toma?.xNome),
     '{{TOMA_IM}}': h(toma?.IM),
     '{{TOMA_ENDERECO}}': h(fmtEnderecoSemMunCep(toma?.enderNac)),
-    '{{TOMA_MUNICIPIO}}': munToma ? h(`${munToma.nome} - ${munToma.uf}`) : h(toma?.enderNac?.cMun || '-'),
-    '{{TOMA_CEP}}': h(toma?.enderNac?.CEP ? formatCep(toma.enderNac.CEP) : '-'),
+    '{{TOMA_MUNICIPIO}}': h(fmtMunicipio(munToma, toma?.enderNac)),
+    '{{TOMA_CEP}}': h(
+      toma?.enderNac?.CEP ? formatCep(toma.enderNac.CEP) : (toma?.enderNac?.cEndPost || '-'),
+    ),
     '{{TOMA_FONE}}': h(toma?.fone ? formatTelefone(toma.fone) : '-'),
     '{{TOMA_EMAIL}}': h(toma?.email),
     '{{INTERM_CNPJ}}': h(fmtDoc(interm?.CNPJ ?? '', interm?.CPF ?? '')),
@@ -349,7 +366,7 @@ export async function renderDanfseHtml(
 
   const intermIdentificado = !!(interm?.CNPJ || interm?.CPF)
   html = applyConditionals(html, {
-    TOMADOR_IDENTIFIED: !!(toma?.CNPJ || toma?.CPF || toma?.xNome),
+    TOMADOR_IDENTIFIED: !!(toma?.CNPJ || toma?.CPF || toma?.NIF || toma?.xNome),
     INTERM_DADOS_IDENTIFIED: intermIdentificado,
     INTERM_NAO_IDENTIFICADO: !intermIdentificado,
     SUBSTITUICAO_IDENTIFIED: !!(dps?.subst),
