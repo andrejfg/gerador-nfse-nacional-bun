@@ -42,6 +42,13 @@ import {
   TipoRetencaoIssqn,
   OpcaoSimplesNacional,
   RegimeEspecialTributacao,
+  ModoPrestacaoComExt,
+  VinculoPrestacao,
+  CodigoMoeda,
+  MecAFComexPrestador,
+  MecAFComexTomador,
+  MovimentacaoTemporariaBens,
+  EnvioMDIC,
   generateDpsId,
   generateNumDps,
   formatDhEmissao,
@@ -139,14 +146,14 @@ const dps: DpsData = {
       xDescServ: env.descricaoServico,
       // Bloco de comércio exterior — obrigatório para tomador no exterior.
       comercioExterior: {
-        mdPrestacao: '1',             // modo de prestação (1 = transfronteiriço)
-        vincPrest: '0',              // sem vínculo entre as partes
-        tpMoeda: '790',              // código da moeda da transação
-        vServMoeda: env.valorServico, // valor na moeda estrangeira
-        mecAFComexP: '01',
-        mecAFComexT: '01',
-        movTempBens: '1',
-        mdic: '0',
+        mdPrestacao: ModoPrestacaoComExt.Transfronteirico,
+        vincPrest: VinculoPrestacao.SemVinculo,
+        tpMoeda: CodigoMoeda.DolarEUA,         // código da moeda (tabela BACEN)
+        vServMoeda: env.valorServico,          // valor na moeda estrangeira
+        mecAFComexP: MecAFComexPrestador.Nenhum,
+        mecAFComexT: MecAFComexTomador.Nenhum,
+        movTempBens: MovimentacaoTemporariaBens.Nao,
+        mdic: EnvioMDIC.NaoEnviar,
       },
     },
 

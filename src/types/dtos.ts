@@ -17,6 +17,13 @@ import type {
   IndicadorTotalTributos,
   TipoEvento,
   MotivoEventoCancelamento,
+  ModoPrestacaoComExt,
+  VinculoPrestacao,
+  CodigoMoeda,
+  MecAFComexPrestador,
+  MecAFComexTomador,
+  MovimentacaoTemporariaBens,
+  EnvioMDIC,
 } from './enums.js'
 
 // ---------------------------------------------------------------------------
@@ -260,23 +267,26 @@ export interface ObraData {
 export interface ComercioExteriorData {
   /**
    * Modo de prestação do serviço no comércio exterior (`mdPrestacao`).
-   * Ex.: `1` = Transfronteiriço.
+   * Ex.: `ModoPrestacaoComExt.Transfronteirico`.
    */
-  mdPrestacao: string
-  /** Vínculo entre as partes da prestação (`vincPrest`). Ex.: `0` = Sem vínculo. */
-  vincPrest: string
-  /** Código da moeda da transação (`tpMoeda`), conforme tabela ISO 4217 numérica. */
-  tpMoeda: string
+  mdPrestacao: ModoPrestacaoComExt
+  /** Vínculo entre as partes da prestação (`vincPrest`). Ex.: `VinculoPrestacao.SemVinculo`. */
+  vincPrest: VinculoPrestacao
+  /**
+   * Código da moeda da transação (`tpMoeda`), conforme tabela de moedas do BACEN
+   * (3 dígitos). Use `CodigoMoeda` para as comuns ou uma string de 3 dígitos.
+   */
+  tpMoeda: CodigoMoeda | (string & {})
   /** Valor do serviço na moeda estrangeira informada em `tpMoeda` (`vServMoeda`). */
   vServMoeda: number
   /** Mecanismo de apoio/fomento ao comércio exterior do prestador (`mecAFComexP`). */
-  mecAFComexP?: string
+  mecAFComexP?: MecAFComexPrestador
   /** Mecanismo de apoio/fomento ao comércio exterior do tomador (`mecAFComexT`). */
-  mecAFComexT?: string
-  /** Movimentação temporária de bens (`movTempBens`). Ex.: `1` = Não. */
-  movTempBens?: string
-  /** Número do Registro de Operações Financeiras / declaração MDIC (`mdic`). */
-  mdic?: string
+  mecAFComexT?: MecAFComexTomador
+  /** Movimentação temporária de bens (`movTempBens`). Ex.: `MovimentacaoTemporariaBens.Nao`. */
+  movTempBens?: MovimentacaoTemporariaBens
+  /** Compartilhamento das informações com o MDIC/SECEX (`mdic`). */
+  mdic?: EnvioMDIC
 }
 
 /**

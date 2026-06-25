@@ -206,6 +206,141 @@ export enum TipoEventoCancelamento {
   SolicitacaoAnaliseFiscal    = TipoEvento.SolicitacaoAnaliseFiscal,
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Comércio Exterior (bloco <comExt> / XSD TCInfoComExt)
+//
+// Estes enums são STRING (não numéricos): vários códigos têm zero à esquerda
+// (`'00'`..`'26'`) que um enum numérico do TS converteria para `1`, quebrando o
+// XML. Para uniformidade, os de dígito único também são string — o tipo XSD é
+// `xs:string`. Fonte: tiposSimples_v1.01.xsd.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Modo de prestação no comércio exterior (`mdPrestacao`) — XSD `TSModoPrestacao`.
+ */
+export enum ModoPrestacaoComExt {
+  /** Desconhecido (tipo não informado na nota de origem). */
+  Desconhecido = '0',
+  Transfronteirico = '1',
+  ConsumoNoBrasil = '2',
+  PresencaComercialExterior = '3',
+  MovimentoTemporarioPessoasFisicas = '4',
+}
+
+/**
+ * Vínculo entre as partes no negócio (`vincPrest`) — XSD `TSVincPrest`.
+ */
+export enum VinculoPrestacao {
+  SemVinculo = '0',
+  Controlada = '1',
+  Controladora = '2',
+  Coligada = '3',
+  Matriz = '4',
+  FilialOuSucursal = '5',
+  OutroVinculo = '6',
+}
+
+/**
+ * Mecanismo de apoio/fomento ao Comércio Exterior do **prestador**
+ * (`mecAFComexP`) — XSD `TSMecAFComExPrest`.
+ */
+export enum MecAFComexPrestador {
+  /** Desconhecido (tipo não informado na nota de origem). */
+  Desconhecido = '00',
+  Nenhum = '01',
+  /** ACC — Adiantamento sobre Contrato de Câmbio (redução a zero do IR e IOF). */
+  ACC = '02',
+  /** ACE — Adiantamento sobre Cambiais Entregues (redução a zero do IR e IOF). */
+  ACE = '03',
+  BNDESEximPosEmbarque = '04',
+  BNDESEximPreEmbarque = '05',
+  /** FGE — Fundo de Garantia à Exportação. */
+  FGE = '06',
+  ProexEqualizacao = '07',
+  ProexFinanciamento = '08',
+}
+
+/**
+ * Mecanismo de apoio/fomento ao Comércio Exterior do **tomador**
+ * (`mecAFComexT`) — XSD `TSMecAFComExToma`.
+ */
+export enum MecAFComexTomador {
+  /** Desconhecido (tipo não informado na nota de origem). */
+  Desconhecido = '00',
+  Nenhum = '01',
+  AdmPublicaRepInternacional = '02',
+  AlugueisArrendMaquinasEmbarcAeronaves = '03',
+  ArrendAeronaveTransporteAereoPublico = '04',
+  ComissaoAgentesExternosExportacao = '05',
+  DespesasArmazenagemMovTransporteExterior = '06',
+  EventosFifaSubsidiaria = '07',
+  EventosFifa = '08',
+  FretesArrendEmbarcacoesAeronaves = '09',
+  MaterialAeronautico = '10',
+  PromocaoBensExterior = '11',
+  PromocaoDestinosTuristicosBrasileiros = '12',
+  PromocaoBrasilExterior = '13',
+  PromocaoServicosExterior = '14',
+  Recine = '15',
+  Recopa = '16',
+  RegistroManutencaoMarcasPatentesCultivares = '17',
+  Reicomp = '18',
+  Reidi = '19',
+  Repenec = '20',
+  Repes = '21',
+  Retaero = '22',
+  Retid = '23',
+  RoyaltiesAssistenciaTecnicaCientifica = '24',
+  ServicosAvaliacaoConformidadeOMC = '25',
+  /** ZPE — Zona de Processamento de Exportação. */
+  ZPE = '26',
+}
+
+/**
+ * Vínculo da operação à movimentação temporária de bens (`movTempBens`) —
+ * XSD `TSMovTempBens`.
+ */
+export enum MovimentacaoTemporariaBens {
+  /** Desconhecido (tipo não informado na nota de origem). */
+  Desconhecido = '0',
+  Nao = '1',
+  VinculadaImportacao = '2',
+  VinculadaExportacao = '3',
+}
+
+/**
+ * Compartilhamento das informações da NFS-e com a Secretaria de Comércio
+ * Exterior (`mdic`) — XSD `TSEnvMDIC`.
+ */
+export enum EnvioMDIC {
+  NaoEnviar = '0',
+  Enviar = '1',
+}
+
+/**
+ * Código de moeda da transação (`tpMoeda`) — XSD `TSCodMoeda` (`[0-9]{3}`).
+ *
+ * **Não é um enum fechado:** o XSD aceita qualquer código de 3 dígitos da
+ * tabela de moedas do BACEN. Os membros abaixo são atalhos para as moedas mais
+ * comuns; outros códigos podem ser informados como string crua de 3 dígitos.
+ *
+ * Códigos conforme a Tabela de Moedas do BACEN (≠ ISO 4217 numérico).
+ */
+export enum CodigoMoeda {
+  /** Real brasileiro. */
+  Real = '790',
+  /** Dólar dos Estados Unidos. */
+  DolarEUA = '220',
+  /** Euro. */
+  Euro = '978',
+  /** Libra esterlina. */
+  LibraEsterlina = '540',
+  /** Iene japonês. */
+  Iene = '470',
+  /** Franco suíço. */
+  FrancoSuico = '425',
+}
+
 /** Formato de saída do preview da DANF-Se. */
 export enum DanfePreviewFormat {
   /** HTML puro — rápido, sem Puppeteer. Abra no browser para visualizar. */
