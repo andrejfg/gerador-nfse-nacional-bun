@@ -8,10 +8,9 @@ import https from 'node:https'
 import forge from 'node-forge'
 import { SefinClient, TipoAmbiente } from '../../dist/index.js'
 
-assert.ok(
-  !process.versions.bun,
-  'Use Node.js para este teste (objetivo: ramo https.request, não fetch+tls do Bun).',
-)
+// Carregado também pela suíte `bun test`, mas só roda sob Node.js — o objetivo
+// é o ramo https.request, não o stack fetch+tls do Bun. Sob Bun, vira no-op.
+const IS_BUN = Boolean(process.versions.bun)
 
 function createCa() {
   const keys = forge.pki.rsa.generateKeyPair(2048)
@@ -160,7 +159,11 @@ async function main() {
   console.log('sefin-client-node-mtls: ok')
 }
 
-main().catch((err) => {
-  console.error(err)
-  process.exit(1)
-})
+if (IS_BUN) {
+  console.log('sefin-client-node-mtls: pulado sob Bun — rode com `node tests/http/sefin-client-node-mtls.test.mjs` após `bun run build`.')
+} else {
+  main().catch((err) => {
+    console.error(err)
+    process.exit(1)
+  })
+}
