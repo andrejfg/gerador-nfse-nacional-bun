@@ -6,6 +6,7 @@
 import type {
   TipoAmbiente,
   EmitenteDPS,
+  MotivoNaoNif,
   TributacaoIssqn,
   TipoRetencaoIssqn,
   TipoRetencaoPisCofins,
@@ -114,7 +115,7 @@ export interface PrestadorData {
   /** NIF — Número de Identificação Fiscal para prestador estrangeiro. */
   nif?: string
   /** Código para prestador estrangeiro sem NIF (`cNaoNIF`). Ex.: `1` = Dispensado de NIF. */
-  codigoNaoNif?: string
+  codigoNaoNif?: MotivoNaoNif
   /** CAEPF — Cadastro de Atividade Econômica da Pessoa Física (`CAEPF`), 14 dígitos. */
   caepf?: string
   /** Inscrição Municipal do prestador no município (`IM`). */
@@ -148,7 +149,7 @@ export interface TomadorData {
   /** NIF — Número de Identificação Fiscal para tomador estrangeiro. */
   nif?: string
   /** Código para tomador estrangeiro sem NIF (`cNaoNIF`). */
-  codigoNaoNif?: string
+  codigoNaoNif?: MotivoNaoNif
   /** Inscrição Municipal do tomador (`IM`). */
   inscricaoMunicipal?: string
   /** Razão social ou nome do tomador (`xNome`). Obrigatório pelo XSD (TCInfoPessoa). */

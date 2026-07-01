@@ -28,6 +28,12 @@ const RET_ISSQN: Record<string, string> = {
   '1': 'Não Retido', '2': 'Retido pelo Tomador', '3': 'Retido pelo Intermediário',
 }
 
+const MOTIVO_NAO_NIF: Record<string, string> = {
+  '0': 'Sem NIF (não informado na nota de origem)',
+  '1': 'Sem NIF (dispensado)',
+  '2': 'Sem NIF (não exigido)',
+}
+
 const TP_IMUNIDADE: Record<string, string> = {
   '0': 'Tipo não informado', '1': 'Patrimônio, renda ou serviços (Art 150, VI, a)',
   '2': 'Templos de qualquer culto', '3': 'Partidos, sindicatos, instituições (Art 150, VI, c)',
@@ -117,11 +123,13 @@ function fmtEnderecoSemMunCep(end?: EnderNacSchema): string {
   return parts.join(', ') || '-'
 }
 
-function fmtDoc(cnpj: string, cpf: string, nif = ''): string {
+function fmtDoc(cnpj: string, cpf: string, nif = '', cNaoNIF = ''): string {
   if (cnpj.replace(/\D/g, '').length === 14) return formatCnpj(cnpj)
   if (cpf.replace(/\D/g, '').length === 11) return formatCpf(cpf)
   // Tomador estrangeiro: NIF não tem máscara fixa — exibe como veio
   if (nif) return nif
+  // Tomador estrangeiro sem NIF: exibe o motivo (cNaoNIF)
+  if (cNaoNIF) return MOTIVO_NAO_NIF[cNaoNIF] ?? cNaoNIF
   return '-'
 }
 
@@ -274,7 +282,7 @@ export async function renderDanfseHtml(
     '{{PREST_EMAIL}}': h(emit?.email),
     '{{PREST_REGIME}}': h(regTrib ? (REGIME_ESP_TRIB[regTrib.regEspTrib] ?? String(regTrib.regEspTrib)) : '-'),
     '{{PREST_SIMPNAC}}': h(regTrib ? (SIMPLES_NACIONAL[regTrib.opSimpNac] ?? String(regTrib.opSimpNac)) : '-'),
-    '{{TOMA_CNPJ}}': h(fmtDoc(toma?.CNPJ ?? '', toma?.CPF ?? '', toma?.NIF ?? '')),
+    '{{TOMA_CNPJ}}': h(fmtDoc(toma?.CNPJ ?? '', toma?.CPF ?? '', toma?.NIF ?? '', toma?.cNaoNIF ?? '')),
     '{{TOMA_XNOME}}': h(toma?.xNome),
     '{{TOMA_IM}}': h(toma?.IM),
     '{{TOMA_ENDERECO}}': h(fmtEnderecoSemMunCep(toma?.enderNac)),
@@ -366,7 +374,7 @@ export async function renderDanfseHtml(
 
   const intermIdentificado = !!(interm?.CNPJ || interm?.CPF)
   html = applyConditionals(html, {
-    TOMADOR_IDENTIFIED: !!(toma?.CNPJ || toma?.CPF || toma?.NIF || toma?.xNome),
+    TOMADOR_IDENTIFIED: !!(toma?.CNPJ || toma?.CPF || toma?.NIF || toma?.cNaoNIF || toma?.xNome),
     INTERM_DADOS_IDENTIFIED: intermIdentificado,
     INTERM_NAO_IDENTIFICADO: !intermIdentificado,
     SUBSTITUICAO_IDENTIFIED: !!(dps?.subst),

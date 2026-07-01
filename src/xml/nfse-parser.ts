@@ -120,6 +120,7 @@ function extractTomador(toma: Record<string, unknown> | undefined): TomadorSchem
     CNPJ:     str(toma['CNPJ']),
     CPF:      str(toma['CPF']),
     NIF:      str(toma['NIF']),
+    cNaoNIF:  str(toma['cNaoNIF']),
     IM:       str(toma['IM']),
     xNome:    str(toma['xNome']),
     enderNac: end ? {
@@ -380,6 +381,8 @@ export interface TomadorSchema {
   CPF: string
   /** NIF — Número de Identificação Fiscal de tomador estrangeiro */
   NIF: string
+  /** Motivo para não informação do NIF (<cNaoNIF>) — tomador estrangeiro sem NIF */
+  cNaoNIF: string
   IM: string
   xNome: string
   /** Endereço extraído de <end>/<endNac> (ou <end>/<endExt> para estrangeiro) */

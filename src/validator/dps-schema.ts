@@ -14,6 +14,7 @@ import {
   MecAFComexTomador,
   MovimentacaoTemporariaBens,
   EnvioMDIC,
+  MotivoNaoNif,
 } from '../types/enums.js'
 
 // ---------------------------------------------------------------------------
@@ -150,7 +151,7 @@ export const PrestadorSchema = z
     cnpj: CnpjSchema.optional(),
     cpf: CpfSchema.optional(),
     nif: z.string().optional(),
-    codigoNaoNif: z.enum(['0', '1', '2']).optional(),
+    codigoNaoNif: z.enum(MotivoNaoNif, { error: 'codigoNaoNif inválido (ver MotivoNaoNif)' }).optional(),
     caepf: z.string().regex(/^[0-9]{14}$/, 'CAEPF deve ter 14 dígitos').optional(),
     inscricaoMunicipal: z.string().optional(),
     nome: z.string().optional(),
@@ -174,7 +175,7 @@ export const TomadorSchema = z
     cnpj: CnpjSchema.optional(),
     cpf: CpfSchema.optional(),
     nif: z.string().optional(),
-    codigoNaoNif: z.enum(['0', '1', '2']).optional(),
+    codigoNaoNif: z.enum(MotivoNaoNif, { error: 'codigoNaoNif inválido (ver MotivoNaoNif)' }).optional(),
     inscricaoMunicipal: z.string().optional(),
     nome: z
       .string()

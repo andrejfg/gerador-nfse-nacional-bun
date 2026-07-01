@@ -96,7 +96,7 @@ function validatePrestador(infDps: InfDpsData, errors: string[]): void {
 function validateTomador(tomador: TomadorData | undefined, errors: string[]): void {
   if (!tomador) return
 
-  const isIdentified = Boolean(tomador.cpf || tomador.cnpj || tomador.nif)
+  const isIdentified = Boolean(tomador.cpf || tomador.cnpj || tomador.nif || tomador.codigoNaoNif)
   if (!isIdentified) return
 
   if (!tomador.endereco) {
@@ -104,7 +104,7 @@ function validateTomador(tomador: TomadorData | undefined, errors: string[]): vo
     return
   }
 
-  if (!tomador.nif && !tomador.endereco.cMun) {
+  if (!tomador.nif && !tomador.codigoNaoNif && !tomador.endereco.cMun) {
     errors.push('Código do município do tomador (endereco.cMun) é obrigatório para tomador nacional.')
   }
 }

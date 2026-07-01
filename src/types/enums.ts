@@ -28,6 +28,16 @@ export enum ModoPrestacao {
   NaoAplicavel = 4,
 }
 
+/**
+ * Motivo para não informação do NIF (`cNaoNIF`) — XSD `TSCodNaoNIF`.
+ */
+export enum MotivoNaoNif {
+  /** Não informado na nota de origem. */
+  NaoInformadoNaOrigem = '0',
+  DispensadoDoNif = '1',
+  NaoExigenciaDoNif = '2',
+}
+
 export enum ProcessoEmissao {
   Normal = 1,
   SubstituicaoNFSe = 2,

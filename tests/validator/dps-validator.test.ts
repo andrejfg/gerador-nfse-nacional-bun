@@ -14,6 +14,7 @@ import {
   MecAFComexTomador,
   MovimentacaoTemporariaBens,
   EnvioMDIC,
+  MotivoNaoNif,
 } from '../../src/types/enums.js'
 import type { DpsData } from '../../src/types/dtos.js'
 
@@ -187,6 +188,33 @@ describe('DpsValidator — tomador', () => {
         nif: 'US123456789',
         nome: 'Foreign Corp',
         endereco: { cMun: '0000000' }, // zeros aceitos pelo regex mas negócio libera para NIF
+      },
+    }))
+    expect(result.isValid).toBe(true)
+  })
+
+  test('tomador identificado só por codigoNaoNif sem endereço falha', () => {
+    const result = validateDps(makeDps({
+      tomador: {
+        codigoNaoNif: MotivoNaoNif.NaoExigenciaDoNif,
+        nome: 'Foreign Corp Without NIF',
+        // sem endereco — deve falhar (regressão do bug em isIdentified)
+      },
+    }))
+    expect(result.isValid).toBe(false)
+    expect(result.errors).toContain(
+      'Endereço do tomador é obrigatório quando o tomador é identificado.',
+    )
+  })
+
+  test('tomador estrangeiro com codigoNaoNif e endExt (sem cMun) é válido', () => {
+    const result = validateDps(makeDps({
+      tomador: {
+        codigoNaoNif: MotivoNaoNif.NaoExigenciaDoNif,
+        nome: 'Foreign Corp Without NIF',
+        endereco: {
+          exterior: { cPais: 'VG', xCidade: 'Road Town', xEstProvReg: 'Tortola' },
+        },
       },
     }))
     expect(result.isValid).toBe(true)

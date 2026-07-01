@@ -466,6 +466,7 @@ A pasta [`examples/`](./examples) contém scripts prontos para uso:
 | 9 | `9-render-xml.ts` | Renderiza a DANF-Se de qualquer XML (NFS-e ou DPS avulso) |
 | 10 | `10-extrair-emitir-comparar.ts` | Round-trip: parse → `DpsData` → `buildDpsXml` → compara com o original |
 | 11 | `11-emitir-exterior.ts` | Emissão para o exterior (tomador por NIF + `endExt` + `comExt`) + DANF-Se |
+| 12 | `12-emitir-exterior-sem-nif.ts` | Emissão para o exterior com tomador sem NIF (`cNaoNIF` + `endExt` + `comExt`) + DANF-Se |
 
 ### Configurar e executar os exemplos
 

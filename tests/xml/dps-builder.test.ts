@@ -14,6 +14,7 @@ import {
   MecAFComexTomador,
   MovimentacaoTemporariaBens,
   EnvioMDIC,
+  MotivoNaoNif,
 } from '../../src/types/enums.js'
 import type { DpsData } from '../../src/types/dtos.js'
 
@@ -294,5 +295,18 @@ describe('buildDpsXml — exterior (endExt + comExt)', () => {
     const dps = makeDpsExterior()
     dps.infDps.servico.comercioExterior!.mecAFComexT = MecAFComexTomador.ZPE // '26'
     expect(buildDpsXml(dps)).toContain('<mecAFComexT>26</mecAFComexT>')
+  })
+
+  test('emite <cNaoNIF> em vez de <NIF> para tomador estrangeiro sem NIF', () => {
+    const dps = makeDpsExterior()
+    dps.infDps.tomador = {
+      codigoNaoNif: MotivoNaoNif.NaoExigenciaDoNif,
+      nome: 'OFFSHORE HOLDINGS LTD',
+      endereco: dps.infDps.tomador!.endereco,
+    }
+    const xml = buildDpsXml(dps)
+    expect(xml).toContain('<cNaoNIF>2</cNaoNIF>')
+    const tomaBloco = xml.slice(xml.indexOf('<toma>'), xml.indexOf('</toma>'))
+    expect(tomaBloco).not.toContain('<NIF>')
   })
 })
