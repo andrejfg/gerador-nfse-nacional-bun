@@ -251,7 +251,10 @@ describe('E2E — DanfeService (template + renderização HTML)', () => {
       expect(error.message).not.toContain('danfe.html')
       expect(error.message).not.toContain('ENOENT')
     }
-  })
+    // 30s como no teste equivalente em tests/danfe/preview.test.ts: sobe um
+    // Chrome de verdade e renderiza o PDF. Cabe nos ~4s de uma máquina local
+    // quente, mas estoura o default de 5s no cold start do CI.
+  }, 30_000)
 })
 
 // ---------------------------------------------------------------------------
