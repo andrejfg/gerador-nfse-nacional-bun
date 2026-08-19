@@ -387,6 +387,63 @@ parseNfseXml(xml)              // NfseSchema
 
 ---
 
+## Validação
+
+`validateDps(dps)` roda duas camadas antes de qualquer chamada de rede: o schema
+Zod derivado do XSD v1.01 e as regras de negócio da SEFIN. A ideia é trocar
+rejeição opaca da API por erro com o campo apontado.
+
+```ts
+import { validateDps } from 'nfse-nacional'
+
+const { isValid, errors } = validateDps(dps)
+if (!isValid) console.error(errors)
+```
+
+O que é conferido, além de formatos e obrigatoriedade:
+
+| Regra | Por quê |
+|---|---|
+| Endereço **completo ou ausente**, nunca parcial | `TCEndereco` exige `xLgr`/`nro`/`xBairro`; `TCEnderNac`, `cMun`+`CEP`; `TCEnderExt`, os quatro. Bloco pela metade é a causa do `E1235` |
+| Exatamente **um** identificador de pessoa | `TCInfoPessoa` é `xs:choice`: CNPJ, CPF, NIF **ou** `cNaoNIF` |
+| Dígitos verificadores de CPF/CNPJ | inclui o **CNPJ alfanumérico** (IN RFB 2.229/2024) |
+| Limites de tamanho de todo campo texto | lidos do XSD (`xLgr` 255, `xBairro` 60, `xNome` 300, `xDescServ` 2000, …) |
+| `CST` × `cClassTrib` na tabela oficial | só as **71** combinações válidas para NFS-e (das 164 publicadas) |
+| `cNaoNIF = 0` recusado na emissão | vale só em nota de origem/substituição — a SEFIN devolve `E0226` |
+| Grupos condicionais | `atvEvento` no item 12 (Regra 276), `obra` na construção civil (Regra 260), `nProcesso` com exigibilidade suspensa |
+
+### Normalização de texto
+
+O XSD tem dois regimes: `TSString` (logradouro, número, complemento, bairro,
+e-mail) restringe o charset ao Latin-1 imprimível; `xs:string` (cidade,
+estado/província, código postal, nome, NIF) aceita qualquer caractere. O SDK
+**valida**; normalizar é escolha de quem chama:
+
+```ts
+import { normalizeTsString, normalizeXsString, TS_BAIRRO_MAX } from 'nfse-nacional'
+
+normalizeTsString('Rue de l’Église', 255)  // "Rue de l'Église"
+normalizeTsString('Łódź', TS_BAIRRO_MAX)   // 'Lódz'
+normalizeXsString('東京', 60)               // '東京' — válido em xs:string
+```
+
+### Tabelas oficiais de IBS/CBS
+
+A correlação do Anexo VIII fica num subpath, para não pesar no pacote de quem só
+emite:
+
+```ts
+import { sugerirIbsCbs } from 'nfse-nacional/tabelas'
+
+sugerirIbsCbs({ cServTribNac: '150101', cNBS: '109052100' })
+// { cIndOp: '100301', cClassTrib: '010002', CST: '010' }
+```
+
+É **sugestão de conferência**, não regra: o `validateDps` não recusa uma nota por
+divergir dela.
+
+---
+
 ## Enums principais
 
 ```typescript
@@ -585,7 +642,11 @@ npm publish
   (Docker, CI) instale o Chrome via `apt-get install -y google-chrome-stable` ou utilize
   `puppeteer/chrome` Docker image.
 - O bloco **IBS/CBS** (Reforma Tributária — NT 007/2026) é **opcional** durante o período
-  de transição e omitido por padrão nos exemplos.
+  de transição e omitido por padrão nos exemplos 1–12. Os exemplos **13** (tomador
+  nacional) e **14** (exportação de serviço) mostram como preenchê-lo — só se envia
+  `finNFSe`, `indFinal`, `cIndOp`, `indDest` e `gIBSCBS/{CST,cClassTrib}`; alíquotas e
+  totais são calculados pela SEFIN e voltam no XML da NFS-e. Os códigos têm enums
+  tipados (`CstIbsCbs`, `ClassTribIbsCbs`, `CodigoIndOp`, …).
 
 ---
 

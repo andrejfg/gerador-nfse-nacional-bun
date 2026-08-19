@@ -1,6 +1,6 @@
 {
   "name": "nfse-nacional",
-  "version": "0.2.4",
+  "version": "0.3.0",
   "description": "SDK TypeScript para emissão de NFS-e Nacional (SEFIN) — DPS, assinatura XMLDSig, DANF-Se em PDF e preview",
   "type": "module",
   "main": "./dist/index.js",
@@ -15,6 +15,16 @@
       "require": {
         "types": "./dist/index.d.ts",
         "default": "./dist/index.cjs"
+      }
+    },
+    "./tabelas": {
+      "import": {
+        "types": "./dist/tabelas.d.ts",
+        "default": "./dist/tabelas.js"
+      },
+      "require": {
+        "types": "./dist/tabelas.d.ts",
+        "default": "./dist/tabelas.cjs"
       }
     }
   },

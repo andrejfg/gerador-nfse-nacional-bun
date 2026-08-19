@@ -47,8 +47,10 @@ src/
 ├── http/        SefinClient — camada baixa (mTLS, endpoints, parse de resposta)
 ├── service/     ContribuinteService — orquestração de alto nível (emitir, consultar, cancelar)
 ├── danfe/       html-renderer, pdf-generator (puppeteer opcional), preview-builder, danfe-service
-├── utils/       cpf-cnpj, id-generator, tax-calculator, endpoint-resolver
-└── index.ts     barrel — única superfície pública do pacote
+├── utils/       cpf-cnpj (+DV), xsd-string (charset/limites TSString), id-generator, tax-calculator
+├── data/        tabelas oficiais IBS/CBS (CST×cClassTrib, Anexo VIII) + lookup
+├── index.ts     barrel — superfície pública principal
+└── tabelas.ts   entrada `nfse-nacional/tabelas` — Anexo VIII + sugerirIbsCbs
 
 assets/
 ├── templates/danfe.html   # template HTML da DANF-Se
@@ -99,9 +101,45 @@ são óbvias a partir do nome do campo.
 ## Decisões arquiteturais que vale saber
 
 - **Bloco IBS/CBS é opcional** durante o período de transição da Reforma
-  Tributária (NT 007/2026). Os exemplos omitem por padrão — documentado em
-  `src/types/dtos.ts` e referenciado no README. Quando a SEFIN tornar
-  obrigatório, a flag precisará virar required no schema.
+  Tributária (NT 007/2026), mas já é usado em produção pelo EmissorWeb.
+  Exemplos 13 e 14 emitem com ele; os demais omitem. O DPS envia só
+  `finNFSe`, `indFinal?`, `cIndOp`, `tpOper?`, `indDest` e
+  `gIBSCBS/{CST,cClassTrib,cCredPres?}` — `cLocalidadeIncid`, alíquotas e
+  `totCIBS` são **calculados pela SEFIN** e voltam no XML da NFS-e
+  (`nfse-parser.ts` já lê). Os códigos têm enums string em `types/enums.ts`
+  (`CstIbsCbs`, `ClassTribIbsCbs`, `CodigoIndOp`, `FinalidadeNFSe`,
+  `IndicadorDestinatario`, `IndicadorConsumidorFinal`, `TipoOperacaoEnteGov`),
+  os três primeiros "abertos" (`Enum | (string & {})`) porque as tabelas
+  oficiais são maiores que os atalhos. Quando a SEFIN tornar o bloco
+  obrigatório, `ibsCbs?` precisa virar required no schema.
+- **Validação: o que o XSD exige, o SDK exige.** O `dps-schema.ts` deixava
+  quase tudo opcional e a SEFIN devolvia `E1235 — Falha no esquema XML do DF-e`
+  sem dizer o campo. Hoje o schema espelha o XSD: `TCEndereco` exige
+  `xLgr`/`nro`/`xBairro`, `TCEnderNac` exige `cMun`+`CEP`, `TCEnderExt` exige os
+  quatro, e `TCInfoPessoa` é `choice` (exatamente um de CNPJ/CPF/NIF/cNaoNIF).
+  Regra geral ao mexer aqui: **bloco opcional é "ausente ou completo", nunca
+  parcial**.
+- **Dois regimes de texto no XSD.** `TSString` (logradouro, número,
+  complemento, bairro, e-mail) restringe o charset a Latin-1 imprimível;
+  `xs:string` (cidade, estado/província, código postal, nome, NIF) não restringe
+  nada — cidade chinesa é válida. `src/utils/xsd-string.ts` tem os limites e os
+  normalizadores (`normalizeTsString`/`normalizeXsString`), exportados para o
+  consumidor normalizar antes de validar. O SDK **valida**, não normaliza
+  sozinho.
+- **CNPJ alfanumérico** (IN RFB 2.229/2024) é aceito por `isValidCnpj` — o DV
+  usa `ASCII − 48`, mesma conta para dígito e letra. ⚠️ O XSD v1.01 ainda diz
+  `TSCNPJ = [0-9]{14}`, então um CNPJ alfanumérico passa aqui e é recusado pela
+  SEFIN até eles atualizarem o schema.
+- **Tabelas IBS/CBS em `src/data/`** transcrevem publicações oficiais da RFB /
+  Portal Nacional. Cada arquivo carrega a data da última conferência
+  (`IBS_CBS_CST_TABLE_ATUALIZADA_EM`, `IBS_CBS_ANEXO_VIII_ATUALIZADO_EM`) —
+  ao atualizar contra uma publicação nova, mexa na data junto. Dos 164
+  `cClassTrib` só **71 valem para NFS-e** — o `validateDps` recusa par
+  CST×cClassTrib inexistente ou de outro documento fiscal. O Anexo VIII fica no
+  subpath `nfse-nacional/tabelas` para não inchar o pacote de quem só emite.
+- **XML é escapado em um lugar só**: `tag()` em `dps-builder.ts`/
+  `eventos-builder.ts` (`src/xml/escape.ts`). Razão social com `&` gerava XML
+  malformado. Qualquer builder novo precisa passar o texto por `tag()`.
 - **Sem retrocompatibilidade shim** quando a API muda. Esta biblioteca
   prefere fazer mudanças diretas e subir versão (`semver`) a manter aliases
   deprecated. Se renomear um campo, apague o antigo.

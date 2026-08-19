@@ -32,9 +32,19 @@ export enum ModoPrestacao {
  * Motivo para não informação do NIF (`cNaoNIF`) — XSD `TSCodNaoNIF`.
  */
 export enum MotivoNaoNif {
-  /** Não informado na nota de origem. */
+  /**
+   * Não informado na nota de origem.
+   *
+   * ⚠️ **Não serve para emitir.** A SEFIN rejeita com **E0226** — este motivo
+   * só existe para representar notas de origem/substituição em que o dado não
+   * veio preenchido. `validateDps` rejeita antes do envio. Para emissão use
+   * {@link MotivoNaoNif.DispensadoDoNif} ou
+   * {@link MotivoNaoNif.NaoExigenciaDoNif}.
+   */
   NaoInformadoNaOrigem = '0',
+  /** Tomador dispensado do NIF. */
   DispensadoDoNif = '1',
+  /** País do tomador não exige NIF. */
   NaoExigenciaDoNif = '2',
 }
 
@@ -357,4 +367,124 @@ export enum DanfePreviewFormat {
   Html = 'html',
   /** PDF gerado via Puppeteer — requer `bun add puppeteer`. */
   Pdf = 'pdf',
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// IBS/CBS — Reforma Tributária (bloco <IBSCBS> / XSD TCRTCInfoIBSCBS)
+//
+// Também STRING enums: `CST` e `cClassTrib` têm zeros à esquerda (`'000'`,
+// `'000001'`) que um enum numérico do TS destruiria. Fontes: tabelas oficiais
+// do Portal Nacional (Anexo VIII — correlação item LC 116/2003 × NBS × indOp ×
+// cClassTrib) e tiposSimples_v1.01.xsd.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Finalidade da emissão da NFS-e (`finNFSe`) — XSD `TSRTCFinNFSe`.
+ */
+export enum FinalidadeNFSe {
+  /** NFS-e regular (único valor aceito hoje pelo XSD v1.01). */
+  Normal = '0',
+}
+
+/**
+ * Indicador de destinatário (`indDest`) — XSD `TSRTCIndDest`.
+ */
+export enum IndicadorDestinatario {
+  /** `0` — tomador = adquirente = destinatário (identificado na própria NFS-e). */
+  TomadorEhDestinatario = '0',
+  /**
+   * `1` — tomador = adquirente ≠ destinatário: outra pessoa física/jurídica (ou
+   * equiparada), ou estabelecimento diferente do indicado como tomador. Exige o
+   * grupo `dest`, **ainda não implementado neste builder**.
+   */
+  DestinatarioDiferente = '1',
+}
+
+/**
+ * Operação de uso ou consumo pessoal — art. 57 (`indFinal`) — XSD `TSRTCIndFinal`.
+ *
+ * **Obrigatório** dentro do grupo `IBSCBS` (o XSD não marca `minOccurs="0"`).
+ */
+export enum IndicadorConsumidorFinal {
+  Nao = '0',
+  Sim = '1',
+}
+
+/**
+ * Tipo de operação com entes governamentais **ou outros serviços sobre bens
+ * imóveis** (`tpOper`) — XSD `TSRTCTpOper`.
+ */
+export enum TipoOperacaoEnteGov {
+  /** `1` — Fornecimento com pagamento posterior. */
+  FornecimentoComPagamentoPosterior = '1',
+  /** `2` — Recebimento do pagamento com fornecimento já realizado. */
+  RecebimentoComFornecimentoRealizado = '2',
+  /** `3` — Fornecimento com pagamento já realizado. */
+  FornecimentoComPagamentoRealizado = '3',
+  /** `4` — Recebimento do pagamento com fornecimento posterior. */
+  RecebimentoComFornecimentoPosterior = '4',
+  /** `5` — Fornecimento e recebimento do pagamento concomitantes. */
+  FornecimentoERecebimentoConcomitantes = '5',
+}
+
+/**
+ * Tipo de ente governamental (`tpEnteGov`) — XSD `TSRTCTpEnteGov`.
+ * Vale para a administração pública direta e suas autarquias e fundações.
+ *
+ * O campo `tpEnteGov` **ainda não é emitido** pelo builder — o enum existe para
+ * quando for.
+ */
+export enum TipoEnteGovernamental {
+  Uniao = '1',
+  Estado = '2',
+  DistritoFederal = '3',
+  Municipio = '4',
+}
+
+/**
+ * CST — Código de Situação Tributária do IBS/CBS (`CST`, 3 dígitos).
+ *
+ * **Não é um enum fechado:** a tabela oficial de CST do IBS/CBS é extensa. Os
+ * membros abaixo são atalhos para os casos mais comuns na prestação de
+ * serviços; qualquer outro código pode ser informado como string de 3 dígitos.
+ */
+export enum CstIbsCbs {
+  /** `000` — Tributação integral pelo IBS e CBS. */
+  TributacaoIntegral = '000',
+  /** `410` — Imunidade e não incidência (inclui exportação de serviço). */
+  ImunidadeNaoIncidencia = '410',
+}
+
+/**
+ * cClassTrib — Código de Classificação Tributária do IBS/CBS (6 dígitos).
+ *
+ * **Não é um enum fechado:** vale o mesmo aviso de {@link CstIbsCbs}. Cada
+ * `cClassTrib` pertence a um `CST`; use a combinação prevista na tabela
+ * oficial (os dois primeiros dígitos repetem o CST).
+ */
+export enum ClassTribIbsCbs {
+  /** `000001` — Situações tributadas integralmente pelo IBS e CBS (CST `000`). */
+  TributacaoIntegral = '000001',
+  /** `410004` — Exportações de bens e serviços (CST `410`). */
+  ExportacaoBensServicos = '410004',
+}
+
+/**
+ * cIndOp — Código indicador da operação de fornecimento (6 dígitos).
+ *
+ * **Não é um enum fechado:** o Anexo VIII do Portal Nacional traz a tabela
+ * completa, correlacionada com o item da LC 116/2003 e com o `cClassTrib`. Os
+ * membros abaixo cobrem os "demais serviços em operações onerosas".
+ */
+export enum CodigoIndOp {
+  /**
+   * `100301` — Demais serviços, em operações onerosas. Local do domicílio
+   * principal do adquirente residente ou domiciliado no País.
+   */
+  DemaisServicosAdquirenteNoPais = '100301',
+  /**
+   * `100302` — Demais serviços, em operações onerosas, quando o adquirente
+   * **não** é residente nem domiciliado no País (exportação de serviço).
+   */
+  DemaisServicosAdquirenteExterior = '100302',
 }

@@ -27,6 +27,8 @@ caminho do arquivo e redireciona para a variante `.local.ts` quando existe.
 | 10 | `10-extrair-emitir-comparar.ts` | Round-trip: parse → `DpsData` → `buildDpsXml` → compara com original | não |
 | 11 | `11-emitir-exterior.ts` | Emissão para o exterior (tomador por NIF + `endExt` + `comExt`) + DANF-Se — só homologação | sim |
 | 12 | `12-emitir-exterior-sem-nif.ts` | Emissão para o exterior com tomador sem NIF (`cNaoNIF` + `endExt` + `comExt`) + DANF-Se — só homologação | sim |
+| 13 | `13-emitir-ibs-cbs.ts` | Emissão com bloco IBS/CBS (Reforma Tributária), tomador nacional — cIndOp 100301, CST 000/000001 — só homologação | sim |
+| 14 | `14-emitir-exterior-ibs-cbs.ts` | Emissão com IBS/CBS para o exterior — cIndOp 100302, CST 410/410004, PIS/COFINS CST 08 — só homologação | sim |
 
 ## Convenções
 

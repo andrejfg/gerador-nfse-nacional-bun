@@ -25,6 +25,13 @@ import type {
   MecAFComexTomador,
   MovimentacaoTemporariaBens,
   EnvioMDIC,
+  FinalidadeNFSe,
+  IndicadorDestinatario,
+  IndicadorConsumidorFinal,
+  TipoOperacaoEnteGov,
+  CstIbsCbs,
+  ClassTribIbsCbs,
+  CodigoIndOp,
 } from './enums.js'
 
 // ---------------------------------------------------------------------------
@@ -177,6 +184,10 @@ export interface IntermediarioData {
   cnpj?: string
   /** CPF do intermediário, somente dígitos, 11 caracteres. */
   cpf?: string
+  /** NIF do intermediário estrangeiro (`NIF`). Exclusivo com cnpj/cpf/codigoNaoNif. */
+  nif?: string
+  /** Motivo de não possuir NIF (`cNaoNIF`). Exclusivo com cnpj/cpf/nif. */
+  codigoNaoNif?: MotivoNaoNif
   /** Inscrição Municipal do intermediário (`IM`). */
   inscricaoMunicipal?: string
   /** Razão social ou nome do intermediário (`xNome`). Obrigatório pelo XSD (TCInfoPessoa). */
@@ -311,8 +322,71 @@ export interface ServicoData {
   comercioExterior?: ComercioExteriorData
   /** Dados de obra de construção civil, quando aplicável. */
   obra?: ObraData
+  /**
+   * Atividade/evento (`atvEvento`) — **obrigatório** para os serviços do item 12
+   * da LC 116/2003 (diversões, lazer, entretenimento e congêneres).
+   */
+  atvEvento?: AtvEventoData
   /** Informações complementares ao serviço. */
   informacaoComplemento?: InformacaoComplementarData
+}
+
+/**
+ * Atividade, evento ou local do serviço prestado (`atvEvento` no XML).
+ * Ref XSD: `TCAtvEvento` — exigido pela Regra 276 nos serviços do item 12.
+ *
+ * `idAtvEvt` e `endereco` são **mutuamente exclusivos** (`<xs:choice>`): informe
+ * o código do evento dado pela administração municipal, ou o endereço onde ele
+ * ocorre.
+ */
+export interface AtvEventoData {
+  /** Descrição do evento artístico, cultural, esportivo etc. (`xNome`, até 255). */
+  xNome: string
+  /** Data de início da atividade (`dtIni`), formato `YYYY-MM-DD`. */
+  dtIni: string
+  /** Data de fim da atividade (`dtFim`), formato `YYYY-MM-DD`. */
+  dtFim: string
+  /**
+   * Identificação da atividade de evento (`idAtvEvt`, até 30), código atribuído
+   * pela administração tributária municipal. Exclusivo com `endereco`.
+   */
+  idAtvEvt?: string
+  /**
+   * Endereço onde a atividade ocorre (`end`). Exclusivo com `idAtvEvt`.
+   *
+   * Ref XSD `TCEnderecoSimples`: `choice(CEP | endExt)` seguido de `xLgr`,
+   * `nro`, `xCpl?`, `xBairro` — diferente de `TCEndereco`, o nacional aqui leva
+   * só o CEP, sem `cMun`.
+   */
+  endereco?: EnderecoAtvEventoData
+}
+
+/** Endereço da atividade/evento. Ref XSD: `TCEnderecoSimples`. */
+export interface EnderecoAtvEventoData {
+  /** CEP do local, somente dígitos (endereço nacional). Exclusivo com `exterior`. */
+  cep?: string
+  /**
+   * Endereço no exterior. Exclusivo com `cep`.
+   *
+   * Ref XSD `TCEnderExtSimples` — **sem `cPais`**, ao contrário do `TCEnderExt`
+   * usado no endereço de pessoa.
+   */
+  exterior?: {
+    /** Código postal (`cEndPost`). */
+    cEndPost: string
+    /** Cidade (`xCidade`). */
+    xCidade: string
+    /** Estado/província/região (`xEstProvReg`). */
+    xEstProvReg: string
+  }
+  /** Logradouro (`xLgr`). */
+  xLgr: string
+  /** Número (`nro`). */
+  nro: string
+  /** Complemento (`xCpl`). */
+  xCpl?: string
+  /** Bairro (`xBairro`). */
+  xBairro: string
 }
 
 // ---------------------------------------------------------------------------
@@ -466,10 +540,16 @@ export interface TributacaoData {
  * Ref XSD: `TCRTCInfoTributosSitClas`
  */
 export interface IbsCbsGIbsCbsData {
-  /** CST — Código de Situação Tributária IBS/CBS (3 dígitos, ex: `"000"` = tributação plena). */
-  CST: string
-  /** cClassTrib — Código de Classificação Tributária (6 dígitos). */
-  cClassTrib: string
+  /**
+   * CST — Código de Situação Tributária IBS/CBS (3 dígitos).
+   * Ex.: `CstIbsCbs.TributacaoIntegral` (`'000'`).
+   */
+  CST: CstIbsCbs | (string & {})
+  /**
+   * cClassTrib — Código de Classificação Tributária (6 dígitos).
+   * Precisa ser compatível com o `CST` informado.
+   */
+  cClassTrib: ClassTribIbsCbs | (string & {})
   /** cCredPres — Código de Crédito Presumido (opcional). */
   cCredPres?: string
 }
@@ -491,38 +571,31 @@ export interface IbsCbsValoresData {
  * @example
  * ```ts
  * ibsCbs: {
- *   finNFSe: '0',
- *   cIndOp: '100000', // consultar tabela oficial
- *   indDest: '0',
- *   valores: { trib: { gIBSCBS: { CST: '000', cClassTrib: '010100' } } },
+ *   finNFSe: FinalidadeNFSe.Normal,
+ *   indFinal: IndicadorConsumidorFinal.Nao,
+ *   cIndOp: CodigoIndOp.DemaisServicosAdquirenteNoPais, // 100301
+ *   indDest: IndicadorDestinatario.TomadorEhDestinatario,
+ *   valores: { trib: { gIBSCBS: {
+ *     CST: CstIbsCbs.TributacaoIntegral,              // 000
+ *     cClassTrib: ClassTribIbsCbs.TributacaoIntegral, // 000001
+ *   } } },
  * }
  * ```
  */
 export interface IbsCbsData {
-  /** finNFSe — Finalidade da emissão: `'0'` = NFS-e regular. */
-  finNFSe: '0'
+  /** finNFSe — Finalidade da emissão. */
+  finNFSe: FinalidadeNFSe
   /**
    * cIndOp — Código indicador da operação de fornecimento (6 dígitos).
-   * Consulte a tabela "código indicador de operação" do Manual NFS-e Nacional.
+   * Tabela completa no Anexo VIII do Portal Nacional.
    */
-  cIndOp: string
-  /**
-   * indDest — Indicador de destinatário:
-   * `'0'` = destinatário é o próprio tomador,
-   * `'1'` = destinatário é diferente do tomador.
-   */
-  indDest: '0' | '1'
-  /** indFinal — Operação de uso/consumo pessoal (art. 57): `'0'` = Não, `'1'` = Sim. */
-  indFinal?: '0' | '1'
-  /**
-   * tpOper — Tipo de operação com entes governamentais:
-   * `'1'` Fornecimento com pagamento posterior,
-   * `'2'` Recebimento do pagamento com fornecimento já realizado,
-   * `'3'` Fornecimento com pagamento já realizado,
-   * `'4'` Recebimento do pagamento com fornecimento posterior,
-   * `'5'` Fornecimento e recebimento concomitantes.
-   */
-  tpOper?: '1' | '2' | '3' | '4' | '5'
+  cIndOp: CodigoIndOp | (string & {})
+  /** indDest — Indicador de destinatário. */
+  indDest: IndicadorDestinatario
+  /** indFinal — Operação de uso/consumo pessoal (art. 57). Obrigatório no XSD. */
+  indFinal: IndicadorConsumidorFinal
+  /** tpOper — Tipo de operação com entes governamentais. */
+  tpOper?: TipoOperacaoEnteGov
   /** valores — Informações de tributação IBS/CBS para o serviço. */
   valores: IbsCbsValoresData
 }
@@ -657,7 +730,7 @@ export interface InfDpsData {
  * ```
  */
 export interface DpsData {
-  /** Versão do esquema XML do DPS (`versao`). Padrão: `1.00`. */
+  /** Versão do esquema XML do DPS (`versao`). Padrão: `1.01`. */
   versao?: string
   /** Informações do DPS (`infDPS`). */
   infDps: InfDpsData

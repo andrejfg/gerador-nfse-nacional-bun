@@ -17,6 +17,8 @@ const examples: Record<string, string> = {
   "10": "examples/10-extrair-emitir-comparar.ts",
   "11": "examples/11-emitir-exterior.ts",
   "12": "examples/12-emitir-exterior-sem-nif.ts",
+  "13": "examples/13-emitir-ibs-cbs.ts",
+  "14": "examples/14-emitir-exterior-ibs-cbs.ts",
 };
 
 const base = examples[num];

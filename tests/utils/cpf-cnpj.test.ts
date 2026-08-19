@@ -7,7 +7,10 @@ import {
   formatTelefone,
   unformat,
   isCnpj,
+  isValidCpf,
+  isValidCnpj,
 } from '../../src/utils/cpf-cnpj.js'
+import { generateCpf, generateCnpj } from '../../src/utils/cpf-cnpj-generator.js'
 
 describe('onlyDigits', () => {
   test('remove pontos, barras e traços', () => {
@@ -92,5 +95,44 @@ describe('isCnpj', () => {
 
   test('retorna false para CPF (11 dígitos)', () => {
     expect(isCnpj('123.456.789-01')).toBe(false)
+  })
+})
+
+describe('isValidCpf / isValidCnpj — dígitos verificadores', () => {
+  test('aceita CPF e CNPJ válidos, com ou sem formatação', () => {
+    expect(isValidCpf('13789037737')).toBe(true)
+    expect(isValidCpf('137.890.377-37')).toBe(true)
+    expect(isValidCnpj('12345678000195')).toBe(true)
+    expect(isValidCnpj('12.345.678/0001-95')).toBe(true)
+  })
+
+  test('rejeita dígito verificador errado', () => {
+    expect(isValidCpf('13789037738')).toBe(false)
+    expect(isValidCnpj('12345678000199')).toBe(false)
+  })
+
+  test('rejeita sequência de caractere repetido — passa no Mod 11 mas não é documento', () => {
+    expect(isValidCpf('11111111111')).toBe(false)
+    expect(isValidCnpj('00000000000000')).toBe(false)
+  })
+
+  test('rejeita tamanho errado', () => {
+    expect(isValidCpf('1378903773')).toBe(false)
+    expect(isValidCnpj('1234567800019')).toBe(false)
+  })
+
+  test('aceita CNPJ alfanumérico (IN RFB 2.229/2024)', () => {
+    // Exemplo oficial da Receita Federal.
+    expect(isValidCnpj('12ABC34501DE35')).toBe(true)
+    expect(isValidCnpj('12.ABC.345/01DE-35')).toBe(true)
+    // DV errado no mesmo CNPJ alfanumérico
+    expect(isValidCnpj('12ABC34501DE36')).toBe(false)
+  })
+
+  test('valida o que o gerador produz', () => {
+    for (let i = 0; i < 50; i++) {
+      expect(isValidCpf(generateCpf())).toBe(true)
+      expect(isValidCnpj(generateCnpj())).toBe(true)
+    }
   })
 })

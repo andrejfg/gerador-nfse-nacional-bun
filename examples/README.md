@@ -101,6 +101,10 @@ bun run examples/1-homologacao.local.ts
 | 8 | [`8-cancelamento.ts`](./8-cancelamento.ts) | Cancelamento de NFS-e (emite ou usa chave existente e cancela) |
 | 9 | [`9-render-xml.ts`](./9-render-xml.ts) | Renderiza a DANF-Se em HTML a partir de um XML já existente (NFS-e completa ou DPS avulso como prévia) |
 | 10 | [`10-extrair-emitir-comparar.ts`](./10-extrair-emitir-comparar.ts) | Round-trip: extrai DPS de um XML, revalida, reemite via `buildDpsXml` e compara com o original |
+| 11 | [`11-emitir-exterior.ts`](./11-emitir-exterior.ts) | Emissão para tomador no exterior identificado por NIF (`endExt` + `comExt`) + DANF-Se — só homologação |
+| 12 | [`12-emitir-exterior-sem-nif.ts`](./12-emitir-exterior-sem-nif.ts) | Emissão para tomador no exterior sem NIF (`cNaoNIF`) + DANF-Se — só homologação |
+| 13 | [`13-emitir-ibs-cbs.ts`](./13-emitir-ibs-cbs.ts) | Emissão com o bloco IBS/CBS da Reforma Tributária, tomador nacional — só homologação |
+| 14 | [`14-emitir-exterior-ibs-cbs.ts`](./14-emitir-exterior-ibs-cbs.ts) | Emissão com IBS/CBS para tomador no exterior (exportação de serviço, CST 410) — só homologação |
 
 ---
 
@@ -150,6 +154,19 @@ bun run example 10                                     # XML padrão em examples
 bun run example 10 caminho/para/arquivo.xml            # XML específico
 # Gera examples/compare-<nome>.report.md com o DpsData em JSON,
 # os XMLs original/reemitido indentados e a primeira divergência (se houver).
+
+# Exemplo 11 — Emissão para o exterior com NIF (requer puppeteer)
+bun run example 11
+
+# Exemplo 12 — Emissão para o exterior sem NIF (cNaoNIF)
+bun run example 12
+
+# Exemplo 13 — Emissão com IBS/CBS (Reforma Tributária), tomador nacional
+bun run example 13
+# Imprime no final o bloco <IBSCBS> que a SEFIN calculou e devolveu
+
+# Exemplo 14 — Emissão com IBS/CBS para o exterior (exportação, CST 410/410004)
+bun run example 14
 ```
 
 ---

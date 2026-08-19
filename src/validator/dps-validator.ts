@@ -7,9 +7,9 @@
 
 import { z } from 'zod'
 import { DpsSchema } from './dps-schema.js'
-import { EmitenteDPS } from '../types/enums.js'
-import type { DpsData, InfDpsData, ValoresServicoData, ServicoData, TomadorData, TributacaoData } from '../types/dtos.js'
-import { TributacaoIssqn } from '../types/enums.js'
+import { EmitenteDPS, MotivoNaoNif, TributacaoIssqn } from '../types/enums.js'
+import type { DpsData, InfDpsData, ValoresServicoData, ServicoData, TomadorData, TributacaoData, IbsCbsData } from '../types/dtos.js'
+import { IBS_CBS_CST_INDEX } from '../data/ibs-cbs-class-trib.js'
 
 /** Resultado da validação de um DPS. */
 export interface ValidationResult {
@@ -68,6 +68,7 @@ export function validateDps(dps: DpsData): ValidationResult {
   validateValores(infDps.valores, errors)
   validateServico(infDps.servico, errors)
   validateTributacao(infDps.tributacao, errors)
+  validateIbsCbs(infDps.ibsCbs, errors)
 
   return errors.length > 0
     ? { isValid: false, errors }
@@ -106,6 +107,16 @@ function validateTomador(tomador: TomadorData | undefined, errors: string[]): vo
 
   if (!tomador.nif && !tomador.codigoNaoNif && !tomador.endereco.cMun) {
     errors.push('Código do município do tomador (endereco.cMun) é obrigatório para tomador nacional.')
+  }
+
+  // E0226: `cNaoNIF = 0` ("não informado na nota de origem") só é aceito em nota
+  // de origem/substituição. Na emissão direta a SEFIN rejeita — falhar aqui em
+  // vez de deixar vir como erro opaco da API.
+  if (tomador.codigoNaoNif === MotivoNaoNif.NaoInformadoNaOrigem) {
+    errors.push(
+      'E0226: codigoNaoNif = 0 ("não informado na nota de origem") não é aceito na emissão. ' +
+        'Use MotivoNaoNif.DispensadoDoNif (1) ou MotivoNaoNif.NaoExigenciaDoNif (2), ou informe o NIF.',
+    )
   }
 }
 
@@ -167,11 +178,38 @@ function validateServico(servico: ServicoData | undefined, errors: string[]): vo
   }
 
   // Regra 276: serviços do item 12 exigem atividade/evento
-  if (cTribNac.startsWith('12')) {
-    const hasAtividadeEvento =
-      'atividadeEvento' in servico && Boolean((servico as Record<string, unknown>)['atividadeEvento'])
-    if (!hasAtividadeEvento) {
-      errors.push('Regra 276: O grupo de informações de Atividade/Evento é obrigatório para o serviço informado.')
-    }
+  if (cTribNac.startsWith('12') && !servico.atvEvento) {
+    errors.push('Regra 276: O grupo de informações de Atividade/Evento (servico.atvEvento) é obrigatório para o serviço informado.')
+  }
+}
+
+/**
+ * Pareamento CST × cClassTrib contra a tabela oficial.
+ *
+ * O schema só confere o formato (`[0-9]{3}` e `[0-9]{6}`), então uma combinação
+ * inexistente — ou existente mas de outro documento fiscal — passa pelo Zod e é
+ * recusada pela SEFIN.
+ */
+function validateIbsCbs(ibsCbs: IbsCbsData | undefined, errors: string[]): void {
+  if (!ibsCbs) return
+
+  const { CST, cClassTrib } = ibsCbs.valores.trib.gIBSCBS
+  const cst = IBS_CBS_CST_INDEX.get(CST)
+
+  if (!cst) {
+    const validos = [...IBS_CBS_CST_INDEX.keys()].join(', ')
+    errors.push(
+      `ibsCbs: CST "${CST}" não consta na tabela oficial de IBS/CBS válida para NFS-e. ` +
+      `CSTs aceitos: ${validos}.`,
+    )
+    return
+  }
+
+  if (!cst.classes.some(c => c.codigo === cClassTrib)) {
+    const validos = cst.classes.map(c => c.codigo).join(', ')
+    errors.push(
+      `ibsCbs: cClassTrib "${cClassTrib}" não pertence ao CST ${CST} (${cst.descricao}) ` +
+      `ou não vale para NFS-e. Classificações aceitas para este CST: ${validos}.`,
+    )
   }
 }

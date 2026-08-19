@@ -9,6 +9,7 @@
 
 import type { PedRegEventoData } from '../types/dtos.js'
 import { formatDhEmissao } from '../utils/id-generator.js'
+import { escapeXml } from './escape.js'
 
 const NAMESPACE = 'http://www.sped.fazenda.gov.br/nfse'
 const VERSAO    = '1.01'
@@ -16,7 +17,7 @@ const VER_APLIC = 'nfse-nacional-1.0'
 
 function tag(name: string, value: string | number | undefined | null): string {
   if (value === undefined || value === null || value === '') return ''
-  return `<${name}>${value}</${name}>`
+  return `<${name}>${escapeXml(value)}</${name}>`
 }
 
 /**

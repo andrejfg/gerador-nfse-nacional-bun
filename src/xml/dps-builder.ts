@@ -16,6 +16,7 @@ import type {
   EnderecoData,
   IbsCbsData,
 } from '../types/dtos.js'
+import { escapeXml } from './escape.js'
 
 const NAMESPACE = 'http://www.sped.fazenda.gov.br/nfse'
 const VERSAO = '1.01'
@@ -26,7 +27,7 @@ function fmt(value: number, decimals = 2): string {
 
 function tag(name: string, value: string | number | undefined | null): string {
   if (value === undefined || value === null || value === '') return ''
-  return `<${name}>${value}</${name}>`
+  return `<${name}>${escapeXml(value)}</${name}>`
 }
 
 function buildEndereco(end: EnderecoData): string {
@@ -89,6 +90,8 @@ function buildIntermediario(interm: IntermediarioData): string {
   return `<interm>${
     tag('CNPJ', interm.cnpj?.replace(/\D/g, ''))
   }${tag('CPF', interm.cpf?.replace(/\D/g, ''))
+  }${tag('NIF', interm.nif)
+  }${tag('cNaoNIF', interm.codigoNaoNif)
   }${tag('IM', interm.inscricaoMunicipal)
   }${tag('xNome', interm.nome)
   }</interm>`
@@ -99,6 +102,34 @@ function buildServico(serv: ServicoData): string {
   // O elemento <art> não existe no schema — identificação de ART/RRT/DRT vai em <infoCompl><idDocTec>.
   const obraXml = serv.obra && (serv.obra.inscImobFisc || serv.obra.cObra)
     ? `<obra>${tag('inscImobFisc', serv.obra.inscImobFisc)}${tag('cObra', serv.obra.cObra)}</obra>`
+    : ''
+
+  // TCAtvEvento (XSD): xNome, dtIni, dtFim, choice(idAtvEvt | end).
+  // O <end> aqui é TCEnderecoSimples — choice(CEP | endExt) e o endExt sem cPais.
+  const atv = serv.atvEvento
+  const atvEventoXml = atv
+    ? `<atvEvento>${
+      tag('xNome', atv.xNome)
+    }${tag('dtIni', atv.dtIni)
+    }${tag('dtFim', atv.dtFim)
+    }${atv.idAtvEvt
+      ? tag('idAtvEvt', atv.idAtvEvt)
+      : atv.endereco
+        ? `<end>${
+          atv.endereco.exterior
+            ? `<endExt>${
+              tag('cEndPost', atv.endereco.exterior.cEndPost)
+            }${tag('xCidade', atv.endereco.exterior.xCidade)
+            }${tag('xEstProvReg', atv.endereco.exterior.xEstProvReg)
+            }</endExt>`
+            : tag('CEP', atv.endereco.cep?.replace(/\D/g, ''))
+        }${tag('xLgr', atv.endereco.xLgr)
+        }${tag('nro', atv.endereco.nro)
+        }${tag('xCpl', atv.endereco.xCpl)
+        }${tag('xBairro', atv.endereco.xBairro)
+        }</end>`
+        : ''
+    }</atvEvento>`
     : ''
 
   // TCInfoCompl (XSD): idDocTec?, docRef?, xPed?, gItemPed?, xInfComp?
@@ -137,7 +168,7 @@ function buildServico(serv: ServicoData): string {
   }${tag('xDescServ', serv.xDescServ)
   }${tag('cNBS', serv.codigoServico.cNBSPrinc)
   }${tag('cIntContrib', serv.codigoServico.cIntContrib)
-  }</cServ>${comExtXml}${obraXml}${infoComplXml}</serv>`
+  }</cServ>${comExtXml}${obraXml}${atvEventoXml}${infoComplXml}</serv>`
 }
 
 function buildValores(val: ValoresServicoData, trib?: TributacaoData): string {

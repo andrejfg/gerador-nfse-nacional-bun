@@ -24,16 +24,17 @@ import type { DpsData } from '../../src/types/dtos.js'
 
 const IBSCBS_BASE = {
   finNFSe: '0' as const,
-  cIndOp: '100000',
+  cIndOp: '100301',
   indDest: '0' as const,
-  valores: { trib: { gIBSCBS: { CST: '000', cClassTrib: '010100' } } },
+  indFinal: '0' as const,
+  valores: { trib: { gIBSCBS: { CST: '000', cClassTrib: '000001' } } },
 } satisfies DpsData['infDps']['ibsCbs']
 
 function makeDps(overrides: Partial<DpsData['infDps']> = {}): DpsData {
   return {
     infDps: {
-      // DPS + 3106200(7) + 2(CNPJ) + 12345678000199(14) + 00001(5) + 000000000000100(15) = 45 chars
-      id: 'DPS310620021234567800019900001000000000000100',
+      // DPS + 3106200(7) + 2(CNPJ) + 12345678000195(14) + 00001(5) + 000000000000100(15) = 45 chars
+      id: 'DPS310620021234567800019500001000000000000100',
       tipoAmbiente: TipoAmbiente.Homologacao,
       dataEmissao: '2023-01-01T00:00:00-03:00',
       numeroDps: '100',
@@ -41,7 +42,7 @@ function makeDps(overrides: Partial<DpsData['infDps']> = {}): DpsData {
       tipoEmitente: EmitenteDPS.Prestador,
       codigoLocalEmissao: '3106200',
       prestador: {
-        cnpj: '12345678000199',
+        cnpj: '12345678000195',
         nome: 'Prestador Teste',
         endereco: { cMun: '3106200', cep: '30100000', xLgr: 'Rua Teste', nro: '100', xBairro: 'Centro' },
         regimeTributario: { opSimpNac: 1, regEspTrib: 0 },
@@ -114,7 +115,7 @@ describe('DpsValidator — prestador', () => {
     const result = validateDps(makeDps({
       tipoEmitente: EmitenteDPS.Tomador, // tpEmit = 2
       prestador: {
-        cnpj: '12345678000199',
+        cnpj: '12345678000195',
         inscricaoMunicipal: '12345',
         nome: 'Prestador Teste',
         regimeTributario: { opSimpNac: 1, regEspTrib: 0 },
@@ -136,7 +137,7 @@ describe('DpsValidator — tomador', () => {
   test('falha quando tomador identificado por CPF não tem endereço', () => {
     const result = validateDps(makeDps({
       tomador: {
-        cpf: '12345678901',
+        cpf: '13789037737',
         nome: 'Tomador Teste',
         // sem endereco
       },
@@ -150,7 +151,7 @@ describe('DpsValidator — tomador', () => {
   test('falha quando tomador com CPF tem endereço mas sem cMun', () => {
     const result = validateDps(makeDps({
       tomador: {
-        cpf: '12345678901',
+        cpf: '13789037737',
         nome: 'Tomador Nacional',
         endereco: { cMun: '' }, // cMun vazio — falha Zod (7 dígitos obrigatórios)
       },
@@ -176,7 +177,7 @@ describe('DpsValidator — tomador', () => {
       tomador: {
         nif: 'US123456789',
         nome: 'Foreign Corp',
-        endereco: { cMun: '3106200' },
+        endereco: { cMun: '3106200', cep: '30100000', xLgr: 'Rua Teste', nro: '100', xBairro: 'Centro' },
       },
     }))
     expect(result.isValid).toBe(true)
@@ -187,7 +188,7 @@ describe('DpsValidator — tomador', () => {
       tomador: {
         nif: 'US123456789',
         nome: 'Foreign Corp',
-        endereco: { cMun: '0000000' }, // zeros aceitos pelo regex mas negócio libera para NIF
+        endereco: { cMun: '0000000', cep: '30100000', xLgr: 'Rua Teste', nro: '100', xBairro: 'Centro' }, // zeros aceitos pelo regex
       },
     }))
     expect(result.isValid).toBe(true)
@@ -213,11 +214,46 @@ describe('DpsValidator — tomador', () => {
         codigoNaoNif: MotivoNaoNif.NaoExigenciaDoNif,
         nome: 'Foreign Corp Without NIF',
         endereco: {
-          exterior: { cPais: 'VG', xCidade: 'Road Town', xEstProvReg: 'Tortola' },
+          exterior: { cPais: 'VG', cEndPost: 'VG1110', xCidade: 'Road Town', xEstProvReg: 'Tortola' },
+          xLgr: 'Wickhams Cay II',
+          nro: 'S/N',
+          xBairro: 'N/A',
         },
       },
     }))
     expect(result.isValid).toBe(true)
+  })
+
+  test('E0226: codigoNaoNif = 0 (não informado na origem) é rejeitado na emissão', () => {
+    const result = validateDps(makeDps({
+      tomador: {
+        codigoNaoNif: MotivoNaoNif.NaoInformadoNaOrigem,
+        nome: 'Foreign Corp Without NIF',
+        endereco: {
+          exterior: { cPais: 'VG', cEndPost: 'VG1110', xCidade: 'Road Town', xEstProvReg: 'Tortola' },
+          xLgr: 'Wickhams Cay II',
+          nro: 'S/N',
+          xBairro: 'N/A',
+        },
+      },
+    }))
+    expect(result.isValid).toBe(false)
+    expect(result.errors.some(e => e.startsWith('E0226:'))).toBe(true)
+  })
+
+  test('E0226 não dispara para os demais motivos de ausência de NIF', () => {
+    for (const motivo of [MotivoNaoNif.DispensadoDoNif, MotivoNaoNif.NaoExigenciaDoNif]) {
+      const result = validateDps(makeDps({
+        tomador: {
+          codigoNaoNif: motivo,
+          nome: 'Foreign Corp Without NIF',
+          endereco: {
+            exterior: { cPais: 'VG', xCidade: 'Road Town', xEstProvReg: 'Tortola' },
+          },
+        },
+      }))
+      expect(result.errors.some(e => e.startsWith('E0226:'))).toBe(false)
+    }
   })
 })
 
@@ -283,18 +319,18 @@ describe('DpsValidator — serviço', () => {
     },
   )
 
-  test('Regra 276: código 120101 (item 12) sem atividadeEvento falha', () => {
+  test('Regra 276: código 120101 (item 12) sem atvEvento falha', () => {
     const result = validateDps(makeDps({
       servico: {
         localPrestacao: { cLocPrestacao: '3106200' },
         codigoServico: { cServTribNac: '120101' },
         xDescServ: 'Evento',
-        // atividadeEvento ausente
+        // atvEvento ausente
       },
     }))
     expect(result.isValid).toBe(false)
     expect(result.errors).toContain(
-      'Regra 276: O grupo de informações de Atividade/Evento é obrigatório para o serviço informado.',
+      'Regra 276: O grupo de informações de Atividade/Evento (servico.atvEvento) é obrigatório para o serviço informado.',
     )
   })
 })
@@ -372,7 +408,7 @@ describe('DpsValidator — validação Zod (XSD v1.01)', () => {
   test('inscricaoMunicipal ausente é válido (campo opcional)', () => {
     const result = validateDps(makeDps({
       prestador: {
-        cnpj: '12345678000199',
+        cnpj: '12345678000195',
         // inscricaoMunicipal omitida — agora opcional
         regimeTributario: { opSimpNac: 1, regEspTrib: 0 },
       },
@@ -383,7 +419,7 @@ describe('DpsValidator — validação Zod (XSD v1.01)', () => {
   test('falha quando regimeTributario do prestador está ausente', () => {
     const result = validateDps(makeDps({
       prestador: {
-        cnpj: '12345678000199',
+        cnpj: '12345678000195',
         inscricaoMunicipal: '12345',
         regimeTributario: undefined as unknown as DpsData['infDps']['prestador']['regimeTributario'],
       },
@@ -510,5 +546,229 @@ describe('DpsValidator — exterior (NIF + endExt + comExt)', () => {
     }))
     expect(result.isValid).toBe(false)
     expect(result.errors.some(e => e.includes('mutuamente exclusivos') || e.includes('exterior'))).toBe(true)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Endereço completo — regressão do E1235
+// ---------------------------------------------------------------------------
+
+describe('DpsValidator — endereço (E1235)', () => {
+  const ENDERECO_NACIONAL = { cMun: '3106200', cep: '30100000', xLgr: 'Rua Teste', nro: '100', xBairro: 'Centro' }
+
+  test('regressão: tomador estrangeiro sem bairro falha aqui, não na SEFIN', () => {
+    // Incidente real: tomador na França sem bairro cadastrado gerava
+    // "E1235 — o elemento 'end' tem conteúdo incompleto", 400 traduzido em 500,
+    // e o job era retentado centenas de vezes sem informação útil.
+    const result = validateDps(makeDps({
+      tomador: {
+        nif: 'FR123456789',
+        nome: 'Societe Francaise',
+        endereco: {
+          exterior: { cPais: 'FR', cEndPost: '75008', xCidade: 'Paris', xEstProvReg: 'Ile-de-France' },
+          xLgr: 'Rue de Rivoli',
+          nro: '10',
+          // xBairro ausente — obrigatório em TCEndereco
+        } as unknown as NonNullable<DpsData['infDps']['tomador']>['endereco'],
+      },
+    }))
+    expect(result.isValid).toBe(false)
+    expect(result.errors.some(e => e.includes('xBairro'))).toBe(true)
+  })
+
+  test('endereço nacional sem CEP falha (TCEnderNac exige cMun e CEP)', () => {
+    const { cep: _cep, ...semCep } = ENDERECO_NACIONAL
+    const result = validateDps(makeDps({
+      tomador: { cpf: '13789037737', nome: 'Tomador', endereco: semCep },
+    }))
+    expect(result.isValid).toBe(false)
+    expect(result.errors.some(e => e.includes('cep'))).toBe(true)
+  })
+
+  test('endExt sem cEndPost falha (TCEnderExt exige os quatro campos)', () => {
+    const result = validateDps(makeDps({
+      tomador: {
+        nif: 'PT123456789',
+        nome: 'Empresa Portuguesa',
+        endereco: {
+          exterior: { cPais: 'PT', xCidade: 'Lisboa', xEstProvReg: 'Lisboa' },
+          xLgr: 'Rua Augusta', nro: '1', xBairro: 'Baixa',
+        } as unknown as NonNullable<DpsData['infDps']['tomador']>['endereco'],
+      },
+    }))
+    expect(result.isValid).toBe(false)
+    expect(result.errors.some(e => e.includes('cEndPost'))).toBe(true)
+  })
+
+  test('cPais fora do formato ISO de 2 letras maiúsculas falha', () => {
+    const result = validateDps(makeDps({
+      tomador: {
+        nif: 'FR123456789',
+        nome: 'Societe',
+        endereco: {
+          exterior: { cPais: 'FRA', cEndPost: '75008', xCidade: 'Paris', xEstProvReg: 'IDF' },
+          xLgr: 'Rue', nro: '1', xBairro: 'Centre',
+        },
+      },
+    }))
+    expect(result.isValid).toBe(false)
+    expect(result.errors.some(e => e.includes('cPais'))).toBe(true)
+  })
+
+  test('logradouro acima de 255 caracteres falha', () => {
+    const result = validateDps(makeDps({
+      tomador: {
+        cpf: '13789037737',
+        nome: 'Tomador',
+        endereco: { ...ENDERECO_NACIONAL, xLgr: 'x'.repeat(256) },
+      },
+    }))
+    expect(result.isValid).toBe(false)
+    expect(result.errors.some(e => e.includes('xLgr'))).toBe(true)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Identificador de pessoa — xs:choice
+// ---------------------------------------------------------------------------
+
+describe('DpsValidator — identificador de pessoa', () => {
+  const ENDERECO_NACIONAL = { cMun: '3106200', cep: '30100000', xLgr: 'Rua Teste', nro: '100', xBairro: 'Centro' }
+
+  test('CNPJ e CPF juntos falham (TCInfoPessoa é choice)', () => {
+    const result = validateDps(makeDps({
+      tomador: {
+        cnpj: '00000000000191',
+        cpf: '13789037737',
+        nome: 'Tomador Ambiguo',
+        endereco: ENDERECO_NACIONAL,
+      },
+    }))
+    expect(result.isValid).toBe(false)
+    expect(result.errors.some(e => e.includes('exatamente um identificador'))).toBe(true)
+  })
+
+  test('NIF e codigoNaoNif juntos falham', () => {
+    const result = validateDps(makeDps({
+      tomador: {
+        nif: 'PT123456789',
+        codigoNaoNif: MotivoNaoNif.DispensadoDoNif,
+        nome: 'Tomador Ambiguo',
+        endereco: {
+          exterior: { cPais: 'PT', cEndPost: '1100-001', xCidade: 'Lisboa', xEstProvReg: 'Lisboa' },
+          xLgr: 'Rua Augusta', nro: '1', xBairro: 'Baixa',
+        },
+      },
+    }))
+    expect(result.isValid).toBe(false)
+    expect(result.errors.some(e => e.includes('exatamente um identificador'))).toBe(true)
+  })
+
+  test('CPF com dígito verificador errado falha', () => {
+    const result = validateDps(makeDps({
+      tomador: { cpf: '13789037738', nome: 'Tomador', endereco: ENDERECO_NACIONAL },
+    }))
+    expect(result.isValid).toBe(false)
+    expect(result.errors.some(e => e.includes('dígitos verificadores'))).toBe(true)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// IBS/CBS — pareamento CST × cClassTrib contra a tabela oficial
+// ---------------------------------------------------------------------------
+
+describe('DpsValidator — IBS/CBS contra a tabela oficial', () => {
+  test('CST 000 com cClassTrib de outro CST falha', () => {
+    const result = validateDps(makeDps({
+      ibsCbs: { ...IBSCBS_BASE, valores: { trib: { gIBSCBS: { CST: '000', cClassTrib: '410004' } } } },
+    }))
+    expect(result.isValid).toBe(false)
+    expect(result.errors.some(e => e.includes('não pertence ao CST 000'))).toBe(true)
+  })
+
+  test('CST inexistente na tabela falha', () => {
+    const result = validateDps(makeDps({
+      ibsCbs: { ...IBSCBS_BASE, valores: { trib: { gIBSCBS: { CST: '999', cClassTrib: '000001' } } } },
+    }))
+    expect(result.isValid).toBe(false)
+    expect(result.errors.some(e => e.includes('não consta na tabela oficial'))).toBe(true)
+  })
+
+  test('cClassTrib que existe mas não vale para NFS-e falha', () => {
+    // 000002 existe sob o CST 000, mas com IndNFSE = false (vale p/ NF-e etc).
+    const result = validateDps(makeDps({
+      ibsCbs: { ...IBSCBS_BASE, valores: { trib: { gIBSCBS: { CST: '000', cClassTrib: '000002' } } } },
+    }))
+    expect(result.isValid).toBe(false)
+    expect(result.errors.some(e => e.includes('não vale para NFS-e'))).toBe(true)
+  })
+
+  test('exportação de serviço (410 / 410004) é combinação válida', () => {
+    const result = validateDps(makeDps({
+      ibsCbs: { ...IBSCBS_BASE, valores: { trib: { gIBSCBS: { CST: '410', cClassTrib: '410004' } } } },
+    }))
+    expect(result.isValid).toBe(true)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// atvEvento (Regra 276) e exigibilidade suspensa
+// ---------------------------------------------------------------------------
+
+describe('DpsValidator — atvEvento e exigibilidade suspensa', () => {
+  const servicoEvento = {
+    localPrestacao: { cLocPrestacao: '3106200' },
+    codigoServico: { cServTribNac: '120101' },
+    xDescServ: 'Show',
+  }
+
+  test('serviço do item 12 com atvEvento é válido', () => {
+    const result = validateDps(makeDps({
+      servico: {
+        ...servicoEvento,
+        atvEvento: { xNome: 'Show de Rock', dtIni: '2026-03-01', dtFim: '2026-03-02', idAtvEvt: 'EVT-1' },
+      },
+    }))
+    expect(result.isValid).toBe(true)
+  })
+
+  test('atvEvento com idAtvEvt e endereco ao mesmo tempo falha (choice)', () => {
+    const result = validateDps(makeDps({
+      servico: {
+        ...servicoEvento,
+        atvEvento: {
+          xNome: 'Show', dtIni: '2026-03-01', dtFim: '2026-03-02',
+          idAtvEvt: 'EVT-1',
+          endereco: { cep: '30100000', xLgr: 'Av. Afonso Pena', nro: '1000', xBairro: 'Centro' },
+        },
+      },
+    }))
+    expect(result.isValid).toBe(false)
+    expect(result.errors.some(e => e.includes('exatamente um entre idAtvEvt e endereco'))).toBe(true)
+  })
+
+  test('atvEvento com dtFim anterior a dtIni falha', () => {
+    const result = validateDps(makeDps({
+      servico: {
+        ...servicoEvento,
+        atvEvento: { xNome: 'Show', dtIni: '2026-03-05', dtFim: '2026-03-01', idAtvEvt: 'EVT-1' },
+      },
+    }))
+    expect(result.isValid).toBe(false)
+    expect(result.errors.some(e => e.includes('dtFim'))).toBe(true)
+  })
+
+  test('tipoSuspensao sem numeroProcessoSuspensao falha (grupo exigSusp incompleto)', () => {
+    const result = validateDps(makeDps({
+      tributacao: { issqn: { tributacaoIssqn: 1, tipoSuspensao: 1 } },
+    }))
+    expect(result.isValid).toBe(false)
+    expect(result.errors.some(e => e.includes('numeroProcessoSuspensao'))).toBe(true)
+  })
+
+  test('data de competência inexistente no calendário falha', () => {
+    const result = validateDps(makeDps({ dataCompetencia: '2026-02-30' }))
+    expect(result.isValid).toBe(false)
+    expect(result.errors.some(e => e.includes('calendário'))).toBe(true)
   })
 })

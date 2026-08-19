@@ -1,5 +1,6 @@
 import { describe, test, expect } from 'bun:test'
 import { buildDpsXml } from '../../src/xml/dps-builder.js'
+import { XMLParser } from 'fast-xml-parser'
 import {
   TipoAmbiente,
   EmitenteDPS,
@@ -15,6 +16,13 @@ import {
   MovimentacaoTemporariaBens,
   EnvioMDIC,
   MotivoNaoNif,
+  FinalidadeNFSe,
+  IndicadorConsumidorFinal,
+  IndicadorDestinatario,
+  TipoOperacaoEnteGov,
+  CstIbsCbs,
+  ClassTribIbsCbs,
+  CodigoIndOp,
 } from '../../src/types/enums.js'
 import type { DpsData } from '../../src/types/dtos.js'
 
@@ -308,5 +316,206 @@ describe('buildDpsXml — exterior (endExt + comExt)', () => {
     expect(xml).toContain('<cNaoNIF>2</cNaoNIF>')
     const tomaBloco = xml.slice(xml.indexOf('<toma>'), xml.indexOf('</toma>'))
     expect(tomaBloco).not.toContain('<NIF>')
+  })
+})
+
+describe('buildDpsXml — IBS/CBS (Reforma Tributária)', () => {
+  const IBSCBS_NACIONAL =
+    '<IBSCBS>' +
+    '<finNFSe>0</finNFSe>' +
+    '<indFinal>0</indFinal>' +
+    '<cIndOp>100301</cIndOp>' +
+    '<indDest>0</indDest>' +
+    '<valores><trib><gIBSCBS>' +
+    '<CST>000</CST>' +
+    '<cClassTrib>000001</cClassTrib>' +
+    '</gIBSCBS></trib></valores>' +
+    '</IBSCBS>'
+
+  const IBSCBS_EXPORTACAO =
+    '<IBSCBS>' +
+    '<finNFSe>0</finNFSe>' +
+    '<indFinal>0</indFinal>' +
+    '<cIndOp>100302</cIndOp>' +
+    '<indDest>0</indDest>' +
+    '<valores><trib><gIBSCBS>' +
+    '<CST>410</CST>' +
+    '<cClassTrib>410004</cClassTrib>' +
+    '</gIBSCBS></trib></valores>' +
+    '</IBSCBS>'
+
+  test('emite o bloco na ordem do XSD para operação interna', () => {
+    const xml = buildDpsXml(makeDps({
+      ibsCbs: {
+        finNFSe: FinalidadeNFSe.Normal,
+        indFinal: IndicadorConsumidorFinal.Nao,
+        cIndOp: CodigoIndOp.DemaisServicosAdquirenteNoPais,
+        indDest: IndicadorDestinatario.TomadorEhDestinatario,
+        valores: {
+          trib: {
+            gIBSCBS: {
+              CST: CstIbsCbs.TributacaoIntegral,
+              cClassTrib: ClassTribIbsCbs.TributacaoIntegral,
+            },
+          },
+        },
+      },
+    }))
+    expect(xml).toContain(IBSCBS_NACIONAL)
+  })
+
+  test('emite CST 410 / cClassTrib 410004 na exportação de serviço', () => {
+    const xml = buildDpsXml(makeDps({
+      ibsCbs: {
+        finNFSe: FinalidadeNFSe.Normal,
+        indFinal: IndicadorConsumidorFinal.Nao,
+        cIndOp: CodigoIndOp.DemaisServicosAdquirenteExterior,
+        indDest: IndicadorDestinatario.TomadorEhDestinatario,
+        valores: {
+          trib: {
+            gIBSCBS: {
+              CST: CstIbsCbs.ImunidadeNaoIncidencia,
+              cClassTrib: ClassTribIbsCbs.ExportacaoBensServicos,
+            },
+          },
+        },
+      },
+    }))
+    expect(xml).toContain(IBSCBS_EXPORTACAO)
+  })
+
+  test('preserva os zeros à esquerda dos códigos (enums string)', () => {
+    const xml = buildDpsXml(makeDps({
+      ibsCbs: {
+        finNFSe: FinalidadeNFSe.Normal,
+        indFinal: IndicadorConsumidorFinal.Nao,
+        cIndOp: CodigoIndOp.DemaisServicosAdquirenteNoPais,
+        indDest: IndicadorDestinatario.TomadorEhDestinatario,
+        valores: {
+          trib: {
+            gIBSCBS: {
+              CST: CstIbsCbs.TributacaoIntegral,
+              cClassTrib: ClassTribIbsCbs.TributacaoIntegral,
+            },
+          },
+        },
+      },
+    }))
+    expect(xml).toContain('<CST>000</CST>')
+    expect(xml).toContain('<cClassTrib>000001</cClassTrib>')
+    // indFinal é obrigatório no XSD (TCRTCInfoIBSCBS, sem minOccurs="0")
+    expect(xml).toContain('<indFinal>0</indFinal>')
+  })
+
+  test('omite o bloco inteiro quando ibsCbs não é informado', () => {
+    expect(buildDpsXml(makeDps())).not.toContain('<IBSCBS>')
+  })
+
+  test('emite tpOper entre cIndOp e indDest quando informado', () => {
+    const xml = buildDpsXml(makeDps({
+      ibsCbs: {
+        finNFSe: FinalidadeNFSe.Normal,
+        indFinal: IndicadorConsumidorFinal.Nao,
+        cIndOp: CodigoIndOp.DemaisServicosAdquirenteNoPais,
+        tpOper: TipoOperacaoEnteGov.FornecimentoERecebimentoConcomitantes,
+        indDest: IndicadorDestinatario.TomadorEhDestinatario,
+        valores: {
+          trib: {
+            gIBSCBS: {
+              CST: CstIbsCbs.TributacaoIntegral,
+              cClassTrib: ClassTribIbsCbs.TributacaoIntegral,
+            },
+          },
+        },
+      },
+    }))
+    expect(xml).toContain('<cIndOp>100301</cIndOp><tpOper>5</tpOper><indDest>0</indDest>')
+  })
+})
+
+describe('buildDpsXml — escape de XML', () => {
+  test('escapa & e <> no texto livre — razão social com "&" é caso real', () => {
+    const dps = makeDps({
+      tomador: { cnpj: '00000000000191', nome: 'A & B <Consultoria> LTDA' },
+      servico: {
+        localPrestacao: { cLocPrestacao: '3106200' },
+        codigoServico: { cServTribNac: '01.01.00163' },
+        xDescServ: 'Consultoria A & B <urgente>',
+      },
+    })
+    const xml = buildDpsXml(dps)
+    expect(xml).toContain('<xNome>A &amp; B &lt;Consultoria&gt; LTDA</xNome>')
+    expect(xml).toContain('<xDescServ>Consultoria A &amp; B &lt;urgente&gt;</xDescServ>')
+    // nenhum "&" solto sobrou: todo & no XML abre uma entidade
+    expect(/&(?!amp;|lt;|gt;|quot;|apos;|#)/.test(xml)).toBe(false)
+  })
+
+  test('round-trip: o parser devolve o texto original', () => {
+    const original = 'Serviço "A" & <B>'
+    const xml = buildDpsXml(makeDps({
+      servico: {
+        localPrestacao: { cLocPrestacao: '3106200' },
+        codigoServico: { cServTribNac: '01.01.00163' },
+        xDescServ: original,
+      },
+    }))
+    const parser = new XMLParser({ ignoreAttributes: false, parseTagValue: false })
+    const parsed = parser.parse(xml) as { DPS: { infDPS: { serv: { cServ: { xDescServ: string } } } } }
+    expect(parsed.DPS.infDPS.serv.cServ.xDescServ).toBe(original)
+  })
+})
+
+describe('buildDpsXml — atvEvento (item 12)', () => {
+  const atvBase = { xNome: 'Show de Rock', dtIni: '2026-03-01', dtFim: '2026-03-02' }
+
+  test('emite o grupo com idAtvEvt na ordem do XSD', () => {
+    const xml = buildDpsXml(makeDps({
+      servico: {
+        localPrestacao: { cLocPrestacao: '3106200' },
+        codigoServico: { cServTribNac: '120101' },
+        xDescServ: 'Evento',
+        atvEvento: { ...atvBase, idAtvEvt: 'EVT-2026-001' },
+      },
+    }))
+    expect(xml).toContain(
+      '<atvEvento><xNome>Show de Rock</xNome><dtIni>2026-03-01</dtIni><dtFim>2026-03-02</dtFim><idAtvEvt>EVT-2026-001</idAtvEvt></atvEvento>',
+    )
+  })
+
+  test('emite <end> com CEP quando o evento tem endereço nacional', () => {
+    const xml = buildDpsXml(makeDps({
+      servico: {
+        localPrestacao: { cLocPrestacao: '3106200' },
+        codigoServico: { cServTribNac: '120101' },
+        xDescServ: 'Evento',
+        atvEvento: {
+          ...atvBase,
+          endereco: { cep: '30100000', xLgr: 'Av. Afonso Pena', nro: '1000', xBairro: 'Centro' },
+        },
+      },
+    }))
+    // TCEnderecoSimples: choice(CEP|endExt) e depois xLgr, nro, xCpl?, xBairro
+    expect(xml).toContain(
+      '<end><CEP>30100000</CEP><xLgr>Av. Afonso Pena</xLgr><nro>1000</nro><xBairro>Centro</xBairro></end>',
+    )
+  })
+
+  test('atvEvento vem depois de obra e antes de infoCompl (xs:sequence do TCServ)', () => {
+    const xml = buildDpsXml(makeDps({
+      servico: {
+        localPrestacao: { cLocPrestacao: '3106200' },
+        codigoServico: { cServTribNac: '120101' },
+        xDescServ: 'Evento',
+        obra: { cObra: '12345' },
+        atvEvento: { ...atvBase, idAtvEvt: 'EVT-1' },
+        informacaoComplemento: { xInfComp: 'Contrato 1' },
+      },
+    }))
+    expect(xml.indexOf('<obra>')).toBeLessThan(xml.indexOf('<atvEvento>'))
+    expect(xml.indexOf('<atvEvento>')).toBeLessThan(xml.indexOf('<infoCompl>'))
+  })
+
+  test('omite o grupo quando não informado', () => {
+    expect(buildDpsXml(makeDps())).not.toContain('<atvEvento>')
   })
 })
